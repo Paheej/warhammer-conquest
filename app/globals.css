@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background-color: #0a0806;
+    color: #e8dcc0;
+    font-family: "Cormorant Garamond", serif;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse at top, rgba(184, 137, 45, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom, rgba(107, 22, 22, 0.04) 0%, transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  /* Scanline-free parchment grain */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.72 0 0 0 0 0.54 0 0 0 0 0.18 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.15;
+    mix-blend-mode: overlay;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: "Cinzel", serif;
+    letter-spacing: 0.05em;
+  }
+}
+
+@layer components {
+  .ornament {
+    @apply inline-block text-brass;
+  }
+
+  .ornament::before { content: "✦"; }
+
+  .btn {
+    @apply inline-flex items-center justify-center px-5 py-2.5 font-display uppercase tracking-widest text-sm transition-all duration-200 border;
+  }
+
+  .btn-primary {
+    @apply btn bg-brass-dark border-brass text-parchment hover:bg-brass hover:text-ink shadow-[0_0_20px_rgba(184,137,45,0.2)] hover:shadow-[0_0_30px_rgba(217,169,74,0.4)];
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent border-brass/40 text-parchment hover:border-brass hover:bg-brass/10;
+  }
+
+  .btn-danger {
+    @apply btn bg-blood/20 border-blood text-parchment hover:bg-blood;
+  }
+
+  .card {
+    @apply relative bg-ink-2/80 border border-brass/30 backdrop-blur-sm;
+    box-shadow:
+      inset 0 0 40px rgba(0, 0, 0, 0.4),
+      0 4px 20px rgba(0, 0, 0, 0.6);
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      transparent 0%,
+      transparent 45%,
+      rgba(184, 137, 45, 0.03) 50%,
+      transparent 55%,
+      transparent 100%
+    );
+  }
+
+  .input {
+    @apply bg-ink border border-brass/30 text-parchment px-4 py-2.5 font-body
+           focus:outline-none focus:border-brass focus:shadow-[0_0_15px_rgba(184,137,45,0.2)]
+           placeholder:text-parchment-dark/60 transition-all;
+  }
+
+  .label {
+    @apply block font-display uppercase text-xs tracking-widest text-brass mb-1.5;
+  }
+
+  .divider-ornate {
+    position: relative;
+    text-align: center;
+    margin: 1.5rem 0;
+  }
+
+  .divider-ornate::before,
+  .divider-ornate::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #b8892d, transparent);
+  }
+
+  .divider-ornate::before { left: 0; }
+  .divider-ornate::after { right: 0; }
+
+  .divider-ornate span {
+    background: #0a0806;
+    padding: 0 1rem;
+    color: #b8892d;
+    font-family: "Cinzel", serif;
+    letter-spacing: 0.2em;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Z-index discipline: keep content above the grain overlay */
+main, header, nav, footer { position: relative; z-index: 2; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fade-up 0.5s ease-out forwards;
+  opacity: 0;
+}
