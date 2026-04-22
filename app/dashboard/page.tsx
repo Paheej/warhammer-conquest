@@ -1,144 +1,182 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { DashboardProfile } from "./DashboardProfile";
-import type { Faction, Profile, Submission } from "@/lib/types";
+// =====================================================================
+// app/dashboard/page.tsx — REPLACEMENT (or merge these sections into
+// your existing dashboard).
+//
+// Shows:
+//   * User's faction memberships (multi-faction manager)
+//   * User's own ELO ratings
+//   * User's recent submissions with status
+// =====================================================================
 
-export const dynamic = "force-dynamic";
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import FactionMembership from '@/components/FactionMembership';
+
+export const dynamic = 'force-dynamic';
+
+interface EloRow {
+  game_system_id: string;
+  faction_id: string;
+  rating: number;
+  games_played: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  factions: { name: string; color: string | null } | null;
+  game_systems: { short_name: string; name: string } | null;
+}
+
+interface SubRow {
+  id: string;
+  kind: string;
+  status: string;
+  title: string | null;
+  points: number | null;
+  created_at: string;
+  planets: { name: string } | null;
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect('/auth/login?next=/dashboard');
 
-  const [{ data: profile }, { data: factions }, { data: submissions }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
-    supabase.from("factions").select("*").order("name"),
+  const [profileRes, eloRes, subsRes] = await Promise.all([
+    supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle(),
     supabase
-      .from("submissions")
-      .select("*")
-      .eq("player_id", user.id)
-      .order("created_at", { ascending: false }),
+      .from('elo_ratings')
+      .select('game_system_id, faction_id, rating, games_played, wins, losses, draws, factions(name, color), game_systems(short_name, name)')
+      .eq('user_id', user.id)
+      .order('rating', { ascending: false }),
+    supabase
+      .from('submissions')
+      .select('id, kind:type, status, title, points, created_at, planets(name)')
+      .eq('player_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(25),
   ]);
 
-  const p = profile as Profile;
-  const subs = (submissions ?? []) as Submission[];
-  const pending = subs.filter((s) => s.status === "pending");
-  const approved = subs.filter((s) => s.status === "approved");
-  const rejected = subs.filter((s) => s.status === "rejected");
-  const totalGlory = approved.reduce((sum, s) => sum + s.points, 0);
-  const myFaction = p.faction_id
-    ? (factions ?? []).find((f) => f.id === p.faction_id)
-    : null;
+  const profile = profileRes.data as { display_name: string | null } | null;
+  const elo  = (eloRes.data ?? []) as unknown as EloRow[];
+  const subs = (subsRes.data ?? []) as unknown as SubRow[];
 
   return (
-    <div className="space-y-8 fade-up">
-      <div className="text-center">
-        <div className="text-brass text-3xl mb-2">✠</div>
-        <h1 className="font-display text-4xl tracking-widest text-parchment">
-          {p.display_name.toUpperCase()}
-        </h1>
-        {myFaction && (
-          <p className="mt-2 font-body italic" style={{ color: myFaction.color }}>
-            Of the {myFaction.name}
-          </p>
-        )}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Glory Earned" value={totalGlory} emphasis />
-        <StatCard label="Approved" value={approved.length} />
-        <StatCard label="Pending" value={pending.length} pendingIfAny />
-        <StatCard label="Rejected" value={rejected.length} />
-      </div>
-
-      {/* Profile editor */}
-      <DashboardProfile profile={p} factions={(factions ?? []) as Faction[]} />
-
-      {/* Recent submissions */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-xl tracking-widest text-parchment">
-            YOUR DEEDS
-          </h2>
-          <Link href="/submit" className="btn-ghost">
-            Log Another
-          </Link>
-        </div>
-        {subs.length === 0 ? (
-          <div className="card p-10 text-center text-parchment-dim italic">
-            No deeds recorded. The ledger awaits your first entry.
+    <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
+      <header className="flex items-center gap-3">
+        <div className="h-14 w-14 overflow-hidden rounded-full border border-brass-700/50 bg-parchment-800">
+          <div className="flex h-full w-full items-center justify-center font-cinzel text-xl text-brass-300">
+            {(profile?.display_name ?? '?').charAt(0).toUpperCase()}
           </div>
+        </div>
+        <div>
+          <p className="font-cinzel text-xs uppercase tracking-[0.3em] text-brass-300">
+            ✠ Your Dashboard ✠
+          </p>
+          <h1 className="font-cinzel text-2xl text-brass-100 sm:text-3xl">
+            {profile?.display_name ?? 'Commander'}
+          </h1>
+        </div>
+        <Link
+          href={`/player/${user.id}`}
+          className="ml-auto rounded border border-brass-700/40 px-3 py-1.5 text-sm text-parchment-200 hover:text-brass-100"
+        >
+          View public profile →
+        </Link>
+      </header>
+
+      {/* Faction memberships */}
+      <div className="mt-6">
+        <FactionMembership userId={user.id} />
+      </div>
+
+      {/* ELO */}
+      <section className="mt-6 rounded border border-brass-700/40 bg-parchment-900/40 p-4">
+        <h2 className="font-cinzel text-lg text-brass-100">Your Ratings</h2>
+        {elo.length === 0 ? (
+          <p className="mt-1 text-sm text-parchment-400">
+            No rated games yet. Link an adversary when you submit a battle and both players earn ELO when approved.
+          </p>
         ) : (
-          <div className="space-y-3">
-            {subs.map((s) => (
-              <div key={s.id} className="card p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-display uppercase tracking-widest text-brass px-2 py-0.5 border border-brass/30">
-                        {s.type}
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[500px] text-sm">
+              <thead className="text-left font-cinzel text-brass-200">
+                <tr>
+                  <th className="px-2 py-1">System</th>
+                  <th className="px-2 py-1">Faction</th>
+                  <th className="px-2 py-1 text-right">Rating</th>
+                  <th className="px-2 py-1 text-right">W</th>
+                  <th className="px-2 py-1 text-right">L</th>
+                  <th className="px-2 py-1 text-right">D</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brass-700/20">
+                {elo.map((r) => (
+                  <tr key={`${r.game_system_id}-${r.faction_id}`} className="text-parchment-200">
+                    <td className="px-2 py-1.5">{r.game_systems?.short_name ?? r.game_system_id}</td>
+                    <td className="px-2 py-1.5">
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: r.factions?.color ?? '#7a5b20' }}
+                        />
+                        {r.factions?.name ?? r.faction_id}
                       </span>
-                      <StatusBadge status={s.status} />
-                    </div>
-                    <div className="font-display text-lg text-parchment">{s.title}</div>
-                    {s.review_notes && (
-                      <div className="mt-2 text-sm italic text-parchment-dim">
-                        Inquisitor's note: {s.review_notes}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="font-display text-xl text-brass-bright">{s.points}</div>
-                    <div className="text-xs uppercase tracking-wider text-parchment-dark">pts</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="px-2 py-1.5 text-right font-bold text-brass-100">{r.rating}</td>
+                    <td className="px-2 py-1.5 text-right text-green-300">{r.wins}</td>
+                    <td className="px-2 py-1.5 text-right text-red-300">{r.losses}</td>
+                    <td className="px-2 py-1.5 text-right text-yellow-300">{r.draws}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
-    </div>
-  );
-}
 
-function StatCard({
-  label,
-  value,
-  emphasis = false,
-  pendingIfAny = false,
-}: {
-  label: string;
-  value: number;
-  emphasis?: boolean;
-  pendingIfAny?: boolean;
-}) {
-  const color = emphasis
-    ? "text-brass-bright"
-    : pendingIfAny && value > 0
-    ? "text-crusade"
-    : "text-parchment";
-  return (
-    <div className="card p-5 text-center">
-      <div className={`font-display text-3xl ${color}`}>{value}</div>
-      <div className="mt-1 text-xs font-display uppercase tracking-widest text-parchment-dark">
-        {label}
-      </div>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: Submission["status"] }) {
-  const map = {
-    pending: { label: "Awaiting Judgement", cls: "border-parchment-dark/40 text-parchment-dark" },
-    approved: { label: "Sealed", cls: "border-brass-bright/60 text-brass-bright" },
-    rejected: { label: "Rejected", cls: "border-crusade/60 text-crusade" },
-  } as const;
-  const { label, cls } = map[status];
-  return (
-    <span className={`text-xs font-display uppercase tracking-widest px-2 py-0.5 border ${cls}`}>
-      {label}
-    </span>
+      {/* Submissions */}
+      <section className="mt-6 rounded border border-brass-700/40 bg-parchment-900/40 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-cinzel text-lg text-brass-100">Your Submissions</h2>
+          <Link
+            href="/submit"
+            className="rounded border border-brass-500 bg-brass-700/30 px-2.5 py-1 text-xs font-cinzel text-brass-100 hover:bg-brass-600/40"
+          >
+            Submit a Deed
+          </Link>
+        </div>
+        {subs.length === 0 ? (
+          <p className="mt-1 text-sm text-parchment-400">No submissions yet.</p>
+        ) : (
+          <ul className="mt-3 flex flex-col divide-y divide-brass-700/20">
+            {subs.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
+                <span className="rounded bg-brass-700/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brass-100">
+                  {s.kind}
+                </span>
+                <span className="text-parchment-100">{s.title ?? '(untitled)'}</span>
+                {s.planets?.name && (
+                  <span className="text-parchment-400">· {s.planets.name}</span>
+                )}
+                <span className={`ml-auto rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                  s.status === 'approved' ? 'bg-green-900/40 text-green-200'
+                  : s.status === 'rejected' ? 'bg-red-900/40 text-red-200'
+                  : 'bg-yellow-900/40 text-yellow-200'
+                }`}>
+                  {s.status}
+                </span>
+                {s.points !== null && (
+                  <span className="text-xs text-brass-300">+{s.points}</span>
+                )}
+                <span className="w-full text-right text-[10px] text-parchment-400 sm:w-auto">
+                  {new Date(s.created_at).toLocaleDateString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </main>
   );
 }

@@ -1,41 +1,91 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { SubmitForm } from "./SubmitForm";
-import type { Faction, Planet, Profile } from "@/lib/types";
+// =====================================================================
+// app/submit/page.tsx — REPLACEMENT submit page.
+//
+// Loads reference data server-side (planets, user's factions, per-planet
+// system allowlist) and hands it off to a client wrapper that lets the
+// user pick which kind of submission they're making.
+//
+// For 'battle' kind, uses the new BattleSubmitForm.
+// For 'painted' / 'lore' / 'bonus' we render a simpler form inline so
+// the submit page works end-to-end. If you already have richer forms
+// for those kinds, swap in your existing components.
+// =====================================================================
 
-export const dynamic = "force-dynamic";
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import SubmitPageClient from './SubmitPageClient';
+import type { GameSystemId } from '@/lib/types';
+
+export const dynamic = 'force-dynamic';
+
+interface Planet  { id: string; name: string; }
+interface Faction { id: string; name: string; }
 
 export default async function SubmitPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/auth/login?next=/submit');
 
-  if (!user) redirect("/auth/login");
-
-  const [{ data: profile }, { data: factions }, { data: planets }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
-    supabase.from("factions").select("*").order("name"),
-    supabase.from("planets").select("*").order("name"),
+  const [planetsRes, pfRes, systemsRes] = await Promise.all([
+    supabase.from('planets').select('id, name').order('name'),
+    supabase
+      .from('player_factions')
+      .select('faction_id, is_primary, factions(id, name)')
+      .eq('user_id', user.id),
+    supabase.from('planet_game_systems').select('planet_id, game_system_id'),
   ]);
 
-  return (
-    <div className="max-w-3xl mx-auto fade-up">
-      <div className="text-center mb-8">
-        <div className="text-brass text-3xl mb-2">✠</div>
-        <h1 className="font-display text-4xl tracking-widest text-parchment">
-          LOG A DEED
-        </h1>
-        <p className="mt-2 font-body italic text-parchment-dim">
-          All submissions are reviewed by the Inquisition before glory is awarded.
-        </p>
-      </div>
+  const planets = (planetsRes.data ?? []) as Planet[];
 
-      <SubmitForm
-        profile={profile as Profile}
-        factions={(factions ?? []) as Faction[]}
-        planets={(planets ?? []) as Planet[]}
-      />
-    </div>
+  type PFRow = { faction_id: string; is_primary: boolean; factions: { id: string; name: string } | null };
+  const pfRows = (pfRes.data ?? []) as unknown as PFRow[];
+  let userFactions: Faction[] = pfRows
+    .map((r) => r.factions)
+    .filter((f): f is { id: string; name: string } => !!f);
+
+  // Fallback: if no player_factions rows exist yet, read profile.faction_id
+  if (userFactions.length === 0) {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('faction_id, factions(id, name)')
+      .eq('id', user.id)
+      .maybeSingle();
+    const pf = (prof as unknown as { factions: { id: string; name: string } | null } | null)?.factions;
+    if (pf) userFactions = [pf];
+  }
+
+  const planetSystems = (systemsRes.data ?? []) as Array<{
+    planet_id: string;
+    game_system_id: GameSystemId;
+  }>;
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
+      <header>
+        <p className="font-cinzel text-xs uppercase tracking-[0.3em] text-brass-300">
+          ✠ Submit a Deed ✠
+        </p>
+        <h1 className="mt-1 font-cinzel text-3xl text-brass-100">Chronicle Your Contribution</h1>
+        <p className="mt-2 text-sm text-parchment-300">
+          All submissions await inquisitorial review. Glory is awarded once approved.
+        </p>
+      </header>
+
+      {userFactions.length === 0 && (
+        <div className="mt-4 rounded border border-yellow-700/60 bg-yellow-900/20 p-3 text-sm text-yellow-200">
+          You&apos;re not pledged to a faction yet. Visit your{' '}
+          <a href="/dashboard" className="underline">dashboard</a> to join one before submitting deeds.
+        </div>
+      )}
+
+      <div className="mt-6">
+        <SubmitPageClient
+          planets={planets}
+          userFactions={userFactions}
+          planetSystems={planetSystems}
+          currentUserId={user.id}
+        />
+      </div>
+    </main>
   );
 }
