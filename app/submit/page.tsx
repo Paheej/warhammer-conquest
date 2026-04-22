@@ -12,7 +12,7 @@
 // =====================================================================
 
 import { redirect } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import SubmitPageClient from './SubmitPageClient';
 import type { GameSystemId } from '@/lib/types';
 
@@ -22,7 +22,7 @@ interface Planet  { id: string; name: string; }
 interface Faction { id: string; name: string; }
 
 export default async function SubmitPage() {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login?next=/submit');
 

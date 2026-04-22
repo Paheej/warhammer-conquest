@@ -9,7 +9,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import type { ActivityFeedItem } from '@/lib/types';
 
 interface PageProps {
@@ -43,7 +43,7 @@ interface EloRow {
 
 export default async function PlayerProfilePage({ params }: PageProps) {
   const { id } = await params;
-  const supabase = await createServerClient();
+  const supabase = await createClient();
 
   const { data: profile } = await supabase
     .from('profiles')

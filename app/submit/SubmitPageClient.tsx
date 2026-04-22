@@ -8,7 +8,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import BattleSubmitForm from '@/components/BattleSubmitForm';
 import type { GameSystemId } from '@/lib/types';
 
@@ -93,7 +93,7 @@ function SimpleSubmitForm({
   currentUserId: string;
 }) {
   const router = useRouter();
-  const supabase = useMemo(() => createBrowserClient(), []);
+  const supabase = useMemo(() => createClient(), []);
 
   const [planetId, setPlanetId] = useState(planets[0]?.id ?? '');
   const [factionId, setFactionId] = useState(userFactions[0]?.id ?? '');

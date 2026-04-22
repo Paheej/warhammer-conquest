@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import AdversaryPicker, { type AdversaryValue } from './AdversaryPicker';
 import type {
   GameSystem, GameSystemId, GameSize, BattleResult,
@@ -31,7 +31,7 @@ interface Props {
 
 export default function BattleSubmitForm({ planets, userFactions, planetSystems, currentUserId }: Props) {
   const router = useRouter();
-  const supabase = useMemo(() => createBrowserClient(), []);
+  const supabase = useMemo(() => createClient(), []);
 
   // Reference data loaded from supabase
   const [systems,    setSystems]    = useState<GameSystem[]>([]);

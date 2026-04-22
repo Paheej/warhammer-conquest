@@ -9,8 +9,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { createBrowserClient } from '@/lib/supabase/client';
-import SignOutButton from './SignOutButton';
+import { createClient } from '@/lib/supabase/client';
+import { SignOutButton } from './SignOutButton';
 
 interface NavLink {
   href: string;
@@ -27,7 +27,7 @@ const LINKS: NavLink[] = [
   { href: '/admin',       label: 'Admin', adminOnly: true },
 ];
 
-export default function NavBar() {
+export function NavBar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState<{ email: string | null; id: string | null } | null>(null);
@@ -40,7 +40,7 @@ export default function NavBar() {
 
   // Load auth + admin status (best-effort; doesn't block render)
   useEffect(() => {
-    const supabase = createBrowserClient();
+    const supabase = createClient();
     let active = true;
 
     (async () => {

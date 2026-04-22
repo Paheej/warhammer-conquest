@@ -10,7 +10,7 @@
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import FactionMembership from '@/components/FactionMembership';
 
 export const dynamic = 'force-dynamic';
@@ -38,7 +38,7 @@ interface SubRow {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login?next=/dashboard');
 

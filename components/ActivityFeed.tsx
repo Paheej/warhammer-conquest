@@ -6,7 +6,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import type { ActivityFeedItem } from '@/lib/types';
 
 function timeAgo(iso: string): string {
@@ -56,7 +56,7 @@ function ResultBadge({ result }: { result: string | null }) {
 }
 
 export default async function ActivityFeed({ limit = 15 }: { limit?: number }) {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('activity_feed')

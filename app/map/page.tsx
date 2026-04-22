@@ -9,7 +9,7 @@
 // into the client <OrbitalMap> component.
 // =====================================================================
 
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import OrbitalMap from './OrbitalMap';
 
 export const revalidate = 30;
@@ -37,7 +37,7 @@ export interface MapFaction {
 }
 
 export default async function MapPage() {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   const [pRes, ppRes, fRes] = await Promise.all([
     supabase.from('planets').select('id, name, position_x, position_y, claim_threshold:threshold, image_url, controlling_faction_id'),
     supabase.from('planet_points').select('planet_id, faction_id, points'),

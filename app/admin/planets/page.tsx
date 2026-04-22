@@ -9,13 +9,13 @@
 
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import AdminPlanetEditor from '@/components/AdminPlanetEditor';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPlanetsPage() {
-  const supabase = await createServerClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login?next=/admin/planets');
 

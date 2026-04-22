@@ -8,7 +8,7 @@
 // =====================================================================
 
 import { useEffect, useRef, useState } from 'react';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import type { SearchablePlayer, PlayerFaction } from '@/lib/types';
 
 export interface AdversaryValue {
@@ -62,7 +62,7 @@ export default function AdversaryPicker({ value, onChange, currentUserId }: Prop
 
     const t = setTimeout(async () => {
       setLoadingSuggest(true);
-      const supabase = createBrowserClient();
+      const supabase = createClient();
       const { data } = await supabase
         .from('searchable_players')
         .select('id, display_name, avatar_url, primary_faction_id, primary_faction_name')
@@ -85,7 +85,7 @@ export default function AdversaryPicker({ value, onChange, currentUserId }: Prop
   useEffect(() => {
     if (!value.userId) { setOpponentFactions([]); return; }
     (async () => {
-      const supabase = createBrowserClient();
+      const supabase = createClient();
       const { data } = await supabase
         .from('player_factions')
         .select('faction_id, factions!inner(id, name)')

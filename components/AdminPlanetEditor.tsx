@@ -11,7 +11,7 @@
 // =====================================================================
 
 import { useEffect, useMemo, useState } from 'react';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import type { GameSystem, GameSystemId } from '@/lib/types';
 
 interface Planet {
@@ -30,7 +30,7 @@ interface Props {
 }
 
 export default function AdminPlanetEditor({ planet, onSaved }: Props) {
-  const supabase = useMemo(() => createBrowserClient(), []);
+  const supabase = useMemo(() => createClient(), []);
 
   const [imageUrl, setImageUrl] = useState(planet.image_url ?? '');
   const [systems, setSystems]   = useState<GameSystem[]>([]);

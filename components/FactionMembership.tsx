@@ -7,7 +7,7 @@
 // =====================================================================
 
 import { useEffect, useMemo, useState } from 'react';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 interface Faction { id: string; name: string; color?: string | null; }
 
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function FactionMembership({ userId }: Props) {
-  const supabase = useMemo(() => createBrowserClient(), []);
+  const supabase = useMemo(() => createClient(), []);
 
   const [allFactions, setAllFactions]   = useState<Faction[]>([]);
   const [memberships, setMemberships]   = useState<Array<{ faction_id: string; is_primary: boolean }>>([]);
