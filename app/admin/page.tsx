@@ -36,7 +36,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     supabase
       .from("submissions")
-      .select("*, profiles(display_name)")
+      .select("*, profiles!submissions_player_id_fkey(display_name)")
       .eq("status", "pending")
       .order("created_at", { ascending: true }),
     supabase.from("planets").select("*").order("name"),
