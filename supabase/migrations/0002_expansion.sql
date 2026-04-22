@@ -247,9 +247,10 @@ alter table public.submissions
   add column if not exists video_game_title_id   bigint references public.video_game_titles(id),
   add column if not exists adversary_user_id     uuid references auth.users(id),
   add column if not exists adversary_faction_id  uuid references public.factions(id),
-  add column if not exists result                text check (result in ('loss','draw','win')),
   add column if not exists elo_delta             int default 0,
   add column if not exists adversary_elo_delta   int default 0;
+-- Note: submissions.result already exists in the base schema with values
+-- 'win' | 'loss' | 'draw' — exactly what we need, so we don't touch it.
 
 create index if not exists idx_submissions_adversary on public.submissions(adversary_user_id);
 create index if not exists idx_submissions_system    on public.submissions(game_system_id);
@@ -418,13 +419,13 @@ begin
     v_submitter_faction := new.faction_id;
     if v_submitter_faction is null then
       select faction_id into v_submitter_faction
-      from public.profiles where id = new.user_id;
+      from public.profiles where id = new.player_id;
     end if;
 
     -- 1) Submitter glory on planet
-    if new.planet_id is not null and v_submitter_faction is not null and coalesce(new.points, 0) > 0 then
+    if new.target_planet_id is not null and v_submitter_faction is not null and coalesce(new.points, 0) > 0 then
       insert into public.planet_points (planet_id, faction_id, points)
-      values (new.planet_id, v_submitter_faction, new.points)
+      values (new.target_planet_id, v_submitter_faction, new.points)
       on conflict (planet_id, faction_id)
       do update set points = public.planet_points.points + excluded.points;
 
@@ -436,34 +437,34 @@ begin
         v_adv_points := greatest(1, ceil(new.points / 2.0)::int);
 
         insert into public.planet_points (planet_id, faction_id, points)
-        values (new.planet_id, new.adversary_faction_id, v_adv_points)
+        values (new.target_planet_id, new.adversary_faction_id, v_adv_points)
         on conflict (planet_id, faction_id)
         do update set points = public.planet_points.points + excluded.points;
       end if;
 
       -- 3) Planet threshold / control flip check
-      select claim_threshold, controlling_faction_id into v_threshold, v_submitter_faction
-      from public.planets where id = new.planet_id;
+      select threshold, controlling_faction_id into v_threshold, v_submitter_faction
+      from public.planets where id = new.target_planet_id;
 
       select coalesce(max(points),0) into v_current
       from public.planet_points
-      where planet_id = new.planet_id;
+      where planet_id = new.target_planet_id;
 
       select faction_id into v_submitter_faction
       from public.planet_points
-      where planet_id = new.planet_id
+      where planet_id = new.target_planet_id
       order by points desc
       limit 1;
 
       if v_current >= coalesce(v_threshold, 0) then
         update public.planets
         set controlling_faction_id = v_submitter_faction
-        where id = new.planet_id;
+        where id = new.target_planet_id;
       end if;
     end if;
 
     -- 4) ELO update for battle submissions with an adversary
-    if new.kind = 'battle'
+    if new.type = 'battle'
        and new.game_system_id is not null
        and new.adversary_user_id is not null
        and new.adversary_faction_id is not null
@@ -475,7 +476,7 @@ begin
       where game_system_id = new.game_system_id;
       v_k := coalesce(v_k, 32);
 
-      v_sub_rating := public.get_or_create_elo(new.user_id, new.game_system_id, new.faction_id);
+      v_sub_rating := public.get_or_create_elo(new.player_id, new.game_system_id, new.faction_id);
       v_adv_rating := public.get_or_create_elo(new.adversary_user_id, new.game_system_id, new.adversary_faction_id);
 
       v_score := case new.result
@@ -494,7 +495,7 @@ begin
             losses = losses + (case when new.result = 'loss' then 1 else 0 end),
             draws  = draws  + (case when new.result = 'draw' then 1 else 0 end),
             updated_at = now()
-      where user_id = new.user_id
+      where user_id = new.player_id
         and game_system_id = new.game_system_id
         and faction_id = new.faction_id;
 
@@ -519,11 +520,10 @@ begin
 end;
 $$;
 
--- Replace the existing trigger (ignore if it doesn't exist)
-drop trigger if exists award_points_on_approval_trg on public.submissions;
-create trigger award_points_on_approval_trg
-  before update on public.submissions
-  for each row execute function public.award_points_on_approval();
+-- NOTE: the existing trg_award_points trigger from 0001_init.sql already
+-- calls award_points_on_approval(). Because we used CREATE OR REPLACE
+-- FUNCTION above, the existing trigger automatically picks up the new
+-- behaviour. We intentionally do NOT create a second trigger here.
 
 
 -- ---------------------------------------------------------------------
@@ -534,18 +534,18 @@ create trigger award_points_on_approval_trg
 create or replace view public.activity_feed as
 select
   s.id                              as submission_id,
-  s.kind,
+  s.type                            as kind,
   s.status,
   s.created_at,
   s.title,
-  s.description,
+  s.body                            as description,
   s.image_url,
   s.points,
   s.result,
   s.game_size,
   p.id                              as user_id,
   coalesce(p.display_name, 'Unknown Commander') as display_name,
-  p.avatar_url,
+  null::text                        as avatar_url,
   f.id                              as faction_id,
   f.name                            as faction_name,
   f.color                           as faction_color,
@@ -555,14 +555,14 @@ select
   gs.short_name                     as game_system_short,
   gs.name                           as game_system_name,
   adv.id                            as adversary_user_id,
-  adv.display_name                  as adversary_name,
+  coalesce(adv.display_name, s.opponent_name) as adversary_name,
   advf.name                         as adversary_faction_name,
   advf.color                        as adversary_faction_color,
   vgt.name                          as video_game_name
 from public.submissions s
-left join public.profiles    p    on p.id = s.user_id
+left join public.profiles    p    on p.id = s.player_id
 left join public.factions    f    on f.id = s.faction_id
-left join public.planets     pl   on pl.id = s.planet_id
+left join public.planets     pl   on pl.id = s.target_planet_id
 left join public.game_systems gs  on gs.id = s.game_system_id
 left join public.profiles    adv  on adv.id = s.adversary_user_id
 left join public.factions    advf on advf.id = s.adversary_faction_id
@@ -581,7 +581,7 @@ create or replace view public.searchable_players as
 select
   p.id,
   p.display_name,
-  p.avatar_url,
+  null::text   as avatar_url,
   p.faction_id as primary_faction_id,
   f.name       as primary_faction_name
 from public.profiles p

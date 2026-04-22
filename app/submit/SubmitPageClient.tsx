@@ -113,13 +113,13 @@ function SimpleSubmitForm({
     }
     setSubmitting(true);
     const { error: err } = await supabase.from('submissions').insert({
-      user_id:    currentUserId,
-      kind,
+      player_id:  currentUserId,
+      type: kind,
       status:     'pending',
-      planet_id:  planetId,
+      target_planet_id: planetId,
       faction_id: factionId,
       title:      title.trim() || (kind === 'painted' ? 'Painted model' : 'Lore entry'),
-      description: description.trim() || null,
+      body:       description.trim() || null,
       image_url:  imageUrl.trim() || null,
       points,
     });

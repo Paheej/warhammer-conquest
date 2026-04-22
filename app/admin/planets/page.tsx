@@ -37,7 +37,7 @@ export default async function AdminPlanetsPage() {
 
   const { data: planets } = await supabase
     .from('planets')
-    .select('id, name, image_url, position_x, position_y, claim_threshold')
+    .select('id, name, image_url, position_x, position_y, claim_threshold:threshold')
     .order('name');
 
   return (

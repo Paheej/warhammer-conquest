@@ -19,7 +19,6 @@ interface PageProps {
 interface ProfileRow {
   id: string;
   display_name: string | null;
-  avatar_url: string | null;
   faction_id: string | null;
   created_at: string;
 }
@@ -48,7 +47,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, avatar_url, faction_id, created_at')
+    .select('id, display_name, faction_id, created_at')
     .eq('id', id)
     .maybeSingle();
 
@@ -73,8 +72,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       .limit(25),
     supabase
       .from('submissions')
-      .select('kind, points', { count: 'exact' })
-      .eq('user_id', id)
+      .select('kind:type, points', { count: 'exact' })
+      .eq('player_id', id)
       .eq('status', 'approved'),
   ]);
 
@@ -94,14 +93,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       {/* Header */}
       <header className="flex flex-col items-start gap-4 rounded border border-brass-700/40 bg-parchment-900/50 p-4 sm:flex-row sm:items-center sm:p-6">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-brass-700/50 bg-parchment-800">
-          {p.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.avatar_url} alt={p.display_name ?? 'Player'} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center font-cinzel text-2xl text-brass-300">
-              {(p.display_name ?? '?').charAt(0).toUpperCase()}
-            </div>
-          )}
+          <div className="flex h-full w-full items-center justify-center font-cinzel text-2xl text-brass-300">
+            {(p.display_name ?? '?').charAt(0).toUpperCase()}
+          </div>
         </div>
         <div className="flex-1">
           <h1 className="font-cinzel text-2xl text-brass-100 sm:text-3xl">

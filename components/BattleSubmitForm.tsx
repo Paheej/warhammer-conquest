@@ -139,23 +139,22 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
     setSubmitting(true);
 
     const payload: Record<string, unknown> = {
-      user_id:    currentUserId,
-      kind:       'battle',
+      player_id:    currentUserId,
+      type:       'battle',
       status:     'pending',
       title:      title.trim() || `${result.toUpperCase()} vs ${adversary.name.trim()}`,
-      description: description.trim() || null,
+      body:       description.trim() || null,
       image_url:  imageUrl.trim() || null,
-      planet_id:  planetId,
+      target_planet_id: planetId,
       faction_id: factionId,
       points,
       game_system_id:      systemId,
       game_size:           size,
       result,
+      opponent_name:       adversary.name.trim() || null,
       video_game_title_id: videoGameId === '' ? null : videoGameId,
       adversary_user_id:   adversary.userId,
       adversary_faction_id: adversary.factionId,
-      // Store the typed name in description fallback if no linked user,
-      // so admins / the feed can still see who the fight was against.
     };
 
     // If no linked adversary, stash the opponent name in the title/description

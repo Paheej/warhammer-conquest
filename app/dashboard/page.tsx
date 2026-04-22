@@ -43,7 +43,7 @@ export default async function DashboardPage() {
   if (!user) redirect('/auth/login?next=/dashboard');
 
   const [profileRes, eloRes, subsRes] = await Promise.all([
-    supabase.from('profiles').select('display_name, avatar_url').eq('id', user.id).maybeSingle(),
+    supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle(),
     supabase
       .from('elo_ratings')
       .select('game_system_id, faction_id, rating, games_played, wins, losses, draws, factions(name, color), game_systems(short_name, name)')
@@ -51,13 +51,13 @@ export default async function DashboardPage() {
       .order('rating', { ascending: false }),
     supabase
       .from('submissions')
-      .select('id, kind, status, title, points, created_at, planets(name)')
-      .eq('user_id', user.id)
+      .select('id, kind:type, status, title, points, created_at, planets(name)')
+      .eq('player_id', user.id)
       .order('created_at', { ascending: false })
       .limit(25),
   ]);
 
-  const profile = profileRes.data as { display_name: string | null; avatar_url: string | null } | null;
+  const profile = profileRes.data as { display_name: string | null } | null;
   const elo  = (eloRes.data ?? []) as unknown as EloRow[];
   const subs = (subsRes.data ?? []) as unknown as SubRow[];
 
@@ -65,14 +65,9 @@ export default async function DashboardPage() {
     <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
       <header className="flex items-center gap-3">
         <div className="h-14 w-14 overflow-hidden rounded-full border border-brass-700/50 bg-parchment-800">
-          {profile?.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center font-cinzel text-xl text-brass-300">
-              {(profile?.display_name ?? '?').charAt(0).toUpperCase()}
-            </div>
-          )}
+          <div className="flex h-full w-full items-center justify-center font-cinzel text-xl text-brass-300">
+            {(profile?.display_name ?? '?').charAt(0).toUpperCase()}
+          </div>
         </div>
         <div>
           <p className="font-cinzel text-xs uppercase tracking-[0.3em] text-brass-300">

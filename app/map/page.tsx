@@ -39,7 +39,7 @@ export interface MapFaction {
 export default async function MapPage() {
   const supabase = await createServerClient();
   const [pRes, ppRes, fRes] = await Promise.all([
-    supabase.from('planets').select('id, name, position_x, position_y, claim_threshold, image_url, controlling_faction_id'),
+    supabase.from('planets').select('id, name, position_x, position_y, claim_threshold:threshold, image_url, controlling_faction_id'),
     supabase.from('planet_points').select('planet_id, faction_id, points'),
     supabase.from('factions').select('id, name, color'),
   ]);
