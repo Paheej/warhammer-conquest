@@ -140,7 +140,8 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
 
     const payload: Record<string, unknown> = {
       player_id:    currentUserId,
-      type:       'battle',
+      // UI kind is 'battle'; DB submission_type enum uses 'game'.
+      type:       'game',
       status:     'pending',
       title:      title.trim() || `${result.toUpperCase()} vs ${adversary.name.trim()}`,
       body:       description.trim() || null,
