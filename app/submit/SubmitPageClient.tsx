@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import BattleSubmitForm from '@/components/BattleSubmitForm';
+import { POINT_PRESETS } from '@/lib/types';
 import type { GameSystemId } from '@/lib/types';
 
 interface Planet  { id: string; name: string; }
@@ -100,7 +101,11 @@ function SimpleSubmitForm({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [points, setPoints] = useState(kind === 'painted' ? 3 : 2);
+  // Use the canonical POINT_PRESETS from lib/types.ts so the initial value
+  // matches one of the dropdown options (see #2).
+  const [points, setPoints] = useState<number>(
+    kind === 'painted' ? POINT_PRESETS.model[0].value : 2,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,9 +117,14 @@ function SimpleSubmitForm({
       return;
     }
     setSubmitting(true);
+    // UI uses 'painted' / 'lore' / 'battle' for tab kinds; the DB
+    // submission_type enum is ('game', 'model', 'lore', 'bonus'), so
+    // map 'painted' -> 'model' before insert. (Battle submissions go
+    // through BattleSubmitForm which maps 'battle' -> 'game'.)
+    const dbType = kind === 'painted' ? 'model' : kind;
     const { error: err } = await supabase.from('submissions').insert({
       player_id:  currentUserId,
-      type: kind,
+      type: dbType,
       status:     'pending',
       target_planet_id: planetId,
       faction_id: factionId,
@@ -132,81 +142,113 @@ function SimpleSubmitForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Planet</span>
+        <span className="label">Planet</span>
         <select
           value={planetId}
           onChange={(e) => setPlanetId(e.target.value)}
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
+          className="input w-full bg-ink text-parchment"
         >
-          {planets.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          {planets.map((p) => (
+            <option key={p.id} value={p.id} className="bg-ink text-parchment">
+              {p.name}
+            </option>
+          ))}
         </select>
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Faction</span>
+        <span className="label">Faction</span>
         <select
           value={factionId}
           onChange={(e) => setFactionId(e.target.value)}
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
+          className="input w-full bg-ink text-parchment"
         >
-          {userFactions.length === 0
-            ? <option value="">(Join a faction first)</option>
-            : userFactions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+          {userFactions.length === 0 ? (
+            <option value="" className="bg-ink text-parchment">
+              (Join a faction first)
+            </option>
+          ) : (
+            userFactions.map((f) => (
+              <option key={f.id} value={f.id} className="bg-ink text-parchment">
+                {f.name}
+              </option>
+            ))
+          )}
         </select>
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Title</span>
+        <span className="label">Title</span>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
-          placeholder={kind === 'painted' ? 'Primaris Captain, finished' : 'The Dirge of Cadia'}
+          className="input w-full"
+          placeholder={kind === 'painted' ? 'Terminator Squad, 3rd Company' : 'The Dirge of Cadia'}
         />
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">
+        <span className="label">
           {kind === 'painted' ? 'Notes (paint scheme, basing, etc.)' : 'The tale'}
         </span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={kind === 'lore' ? 8 : 4}
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
+          className="input w-full"
         />
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">
-          Image URL {kind === 'painted' && <span className="text-parchment-400">(recommended)</span>}
+        <span className="label">
+          Image URL {kind === 'painted' && <span className="text-parchment-dark normal-case">(recommended)</span>}
         </span>
         <input
           type="url"
           value={imageUrl}
           onChange={(e) => setImageUrl(e.target.value)}
           placeholder="https://…"
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
+          className="input w-full"
         />
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Claimed points</span>
+        <span className="label">
+          {kind === 'painted' ? 'Unit Size' : 'Claimed points'}
+        </span>
         <select
           value={points}
           onChange={(e) => setPoints(Number(e.target.value))}
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
+          className="input w-full bg-ink text-parchment"
         >
-          {[1,2,3,4,5,7,10].map((n) => <option key={n} value={n}>{n}</option>)}
+          {kind === 'painted'
+            ? POINT_PRESETS.model.map((opt) => (
+                <option
+                  key={opt.value}
+                  value={opt.value}
+                  className="bg-ink text-parchment"
+                >
+                  {opt.label} · {opt.value} pts
+                </option>
+              ))
+            : POINT_PRESETS.lore.map((opt) => (
+                <option
+                  key={opt.value}
+                  value={opt.value}
+                  className="bg-ink text-parchment"
+                >
+                  {opt.label} · {opt.value} pts
+                </option>
+              ))}
         </select>
-        <p className="mt-1 text-xs text-parchment-400">
-          Admins may adjust the final value before approving.
+        <p className="mt-1 text-xs italic text-parchment-dark">
+          The Inquisition may adjust this value upon review.
         </p>
       </label>
 
       {error && (
-        <div className="rounded border border-red-700/60 bg-red-900/30 px-3 py-2 text-sm text-red-200">
+        <div className="border border-blood bg-blood/20 px-3 py-2 text-sm text-parchment">
           {error}
         </div>
       )}
@@ -214,7 +256,7 @@ function SimpleSubmitForm({
       <button
         type="submit"
         disabled={submitting || userFactions.length === 0}
-        className="rounded border border-brass-500 bg-brass-700/40 px-4 py-2.5 font-cinzel text-brass-100 hover:bg-brass-600/40 disabled:opacity-50"
+        className="btn-primary disabled:opacity-50"
       >
         {submitting ? 'Submitting…' : 'Submit for Approval'}
       </button>
