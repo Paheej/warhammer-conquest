@@ -133,7 +133,7 @@ export default function AdversaryPicker({ value, onChange, currentUserId }: Prop
   return (
     <div ref={wrapRef} className="relative flex flex-col gap-2">
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Adversary</span>
+        <span className="label">Adversary</span>
         <div className="mt-1 flex items-stretch gap-2">
           <input
             type="text"
@@ -147,13 +147,13 @@ export default function AdversaryPicker({ value, onChange, currentUserId }: Prop
             }}
             onFocus={() => { if (suggestions.length > 0) setOpen(true); }}
             placeholder="Type a name — registered players will auto-suggest"
-            className="flex-1 rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100 placeholder:text-parchment-500 focus:border-brass-500 focus:outline-none"
+            className="input flex-1"
           />
           {value.userId && (
             <button
               type="button"
               onClick={clearLink}
-              className="rounded border border-brass-700/40 px-2 py-1 text-xs text-parchment-300 hover:text-brass-200"
+              className="rounded border border-brass/40 px-2 py-1 text-xs text-parchment-dim hover:border-brass hover:text-brass-bright"
               aria-label="Unlink opponent"
             >
               Unlink
@@ -163,30 +163,30 @@ export default function AdversaryPicker({ value, onChange, currentUserId }: Prop
       </label>
 
       {open && suggestions.length > 0 && (
-        <ul className="absolute top-full z-20 mt-1 w-full overflow-hidden rounded border border-brass-700/40 bg-parchment-900 shadow-lg">
+        <ul className="absolute top-full z-20 mt-1 w-full overflow-hidden rounded border border-brass/40 bg-ink-2 shadow-lg">
           {loadingSuggest && (
-            <li className="px-3 py-2 text-sm text-parchment-400">Searching…</li>
+            <li className="px-3 py-2 text-sm text-parchment-dark">Searching…</li>
           )}
           {suggestions.map((s) => (
             <li key={s.id}>
               <button
                 type="button"
                 onClick={() => pick(s)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-brass-700/20"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-brass/10"
               >
-                <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-brass-700/40 bg-parchment-800">
+                <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-brass/40 bg-ink">
                   {s.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={s.avatar_url} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-brass-300">
+                    <div className="flex h-full w-full items-center justify-center text-xs text-brass-bright">
                       {s.display_name.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
-                <span className="text-sm text-parchment-100">{s.display_name}</span>
+                <span className="text-sm text-parchment">{s.display_name}</span>
                 {s.primary_faction_name && (
-                  <span className="ml-auto text-xs text-parchment-400">{s.primary_faction_name}</span>
+                  <span className="ml-auto text-xs text-parchment-dark">{s.primary_faction_name}</span>
                 )}
               </button>
             </li>
@@ -205,16 +205,16 @@ export default function AdversaryPicker({ value, onChange, currentUserId }: Prop
             <label className="mt-2 block">
               <span className="block text-xs text-green-200">Which faction were they fielding?</span>
               <select
-                className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-2 py-1 text-parchment-100"
+                className="input mt-1 w-full bg-ink text-parchment"
                 value={value.factionId ?? ''}
                 onChange={(e) => {
                   const f = opponentFactions.find((x) => x.id === e.target.value);
                   onChange({ ...value, factionId: f?.id ?? null, factionName: f?.name ?? null });
                 }}
               >
-                <option value="">— select faction —</option>
+                <option value="" className="bg-ink text-parchment">— select faction —</option>
                 {opponentFactions.map((f) => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
+                  <option key={f.id} value={f.id} className="bg-ink text-parchment">{f.name}</option>
                 ))}
               </select>
             </label>
