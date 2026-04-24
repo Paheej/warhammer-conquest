@@ -184,14 +184,22 @@ $$;
 -- / 'bonus'. Translate in the view so the storage layer stays
 -- normalized and the presentation layer doesn't have to know about
 -- this alias.
-create or replace view public.activity_feed as
+--
+-- Postgres refuses CREATE OR REPLACE VIEW when a column's type
+-- changes (the existing `kind` column is submission_type; the new
+-- CASE expression is text), so we drop and recreate. No other DB
+-- object depends on this view, so no CASCADE is needed and we keep
+-- the DROP non-cascading to fail loudly if that ever changes.
+drop view if exists public.activity_feed;
+
+create view public.activity_feed as
 select
   s.id                              as submission_id,
   case s.type
     when 'game'  then 'battle'
     when 'model' then 'painted'
     else s.type::text
-  end                               as kind,
+  end::text                         as kind,
   s.status,
   s.created_at,
   s.title,
