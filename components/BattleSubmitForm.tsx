@@ -192,49 +192,49 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* Planet */}
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Planet</span>
+        <span className="label">Planet</span>
         <select
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
+          className="input w-full bg-ink text-parchment"
           value={planetId}
           onChange={(e) => setPlanetId(e.target.value)}
         >
           {planets.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
+            <option key={p.id} value={p.id} className="bg-ink text-parchment">{p.name}</option>
           ))}
         </select>
       </label>
 
       {/* Our faction (multi-faction support) */}
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Fighting as</span>
+        <span className="label">Fighting as</span>
         <select
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
+          className="input w-full bg-ink text-parchment"
           value={factionId}
           onChange={(e) => setFactionId(e.target.value)}
         >
           {userFactions.length === 0 ? (
-            <option value="">(Join a faction first on your dashboard)</option>
+            <option value="" className="bg-ink text-parchment">(Join a faction first on your dashboard)</option>
           ) : (
-            userFactions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)
+            userFactions.map((f) => <option key={f.id} value={f.id} className="bg-ink text-parchment">{f.name}</option>)
           )}
         </select>
       </label>
 
       {/* System */}
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Game System</span>
+        <span className="label">Game System</span>
         <select
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
+          className="input w-full bg-ink text-parchment"
           value={systemId}
           onChange={(e) => setSystemId(e.target.value as GameSystemId)}
         >
-          {allowedSystems.length === 0 && <option value="">— no systems allowed here —</option>}
+          {allowedSystems.length === 0 && <option value="" className="bg-ink text-parchment">— no systems allowed here —</option>}
           {allowedSystems.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id} className="bg-ink text-parchment">{s.name}</option>
           ))}
         </select>
         {allowedSystems.length > 0 && allowedSystems.length < systems.length && (
-          <p className="mt-1 text-xs text-parchment-400">
+          <p className="mt-1 text-xs italic text-parchment-dark">
             This planet is restricted to {allowedSystems.map((s) => s.short_name).join(', ')}.
           </p>
         )}
@@ -243,7 +243,7 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       {/* Size — only for systems that support it */}
       {currentSystem?.supports_size && (
         <div>
-          <span className="block text-sm font-medium text-parchment-200">Battle Size</span>
+          <span className="label">Battle Size</span>
           <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-3">
             {sizeOptions.map((s) => (
               <button
@@ -252,8 +252,8 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
                 onClick={() => setSize(s)}
                 className={`rounded border px-3 py-2 text-left text-sm transition-colors ${
                   size === s
-                    ? 'border-brass-500 bg-brass-700/30 text-brass-100'
-                    : 'border-brass-700/40 bg-parchment-950 text-parchment-200 hover:border-brass-600'
+                    ? 'border-brass bg-brass/10 text-parchment'
+                    : 'border-brass/20 text-parchment-dim hover:border-brass/50'
                 }`}
               >
                 {sizeLabel[s]}
@@ -266,15 +266,15 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       {/* Video game — only for 'video' */}
       {currentSystem?.supports_video_game && (
         <label className="block">
-          <span className="block text-sm font-medium text-parchment-200">Video Game</span>
+          <span className="label">Video Game</span>
           <select
-            className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100"
+            className="input w-full bg-ink text-parchment"
             value={videoGameId}
             onChange={(e) => setVideoGameId(e.target.value === '' ? '' : Number(e.target.value))}
           >
-            <option value="">— select a title —</option>
+            <option value="" className="bg-ink text-parchment">— select a title —</option>
             {videoGames.map((v) => (
-              <option key={v.id} value={v.id}>{v.name}</option>
+              <option key={v.id} value={v.id} className="bg-ink text-parchment">{v.name}</option>
             ))}
           </select>
         </label>
@@ -282,7 +282,7 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
 
       {/* Result */}
       <div>
-        <span className="block text-sm font-medium text-parchment-200">Result</span>
+        <span className="label">Result</span>
         <div className="mt-1 grid grid-cols-3 gap-2">
           {(['loss','draw','win'] as BattleResult[]).map((r) => {
             const pts = schemes.find(
@@ -290,18 +290,18 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
             )?.points ?? 0;
             const active = result === r;
             const palette = r === 'win'
-              ? (active ? 'border-green-500 bg-green-900/40 text-green-100' : 'border-brass-700/40 text-parchment-200')
+              ? (active ? 'border-green-500 bg-green-900/40 text-green-100' : 'border-brass/20 text-parchment-dim')
               : r === 'loss'
-              ? (active ? 'border-red-500 bg-red-900/40 text-red-100' : 'border-brass-700/40 text-parchment-200')
-              : (active ? 'border-yellow-500 bg-yellow-900/40 text-yellow-100' : 'border-brass-700/40 text-parchment-200');
+              ? (active ? 'border-red-500 bg-red-900/40 text-red-100' : 'border-brass/20 text-parchment-dim')
+              : (active ? 'border-yellow-500 bg-yellow-900/40 text-yellow-100' : 'border-brass/20 text-parchment-dim');
             return (
               <button
                 key={r}
                 type="button"
                 onClick={() => setResult(r)}
-                className={`flex flex-col items-center rounded border bg-parchment-950 px-3 py-2 text-sm transition-colors hover:border-brass-600 ${palette}`}
+                className={`flex flex-col items-center rounded border px-3 py-2 text-sm transition-colors hover:border-brass/50 ${palette}`}
               >
-                <span className="font-cinzel uppercase tracking-wider">{r}</span>
+                <span className="font-display uppercase tracking-wider">{r}</span>
                 <span className="text-xs opacity-80">+{pts} glory</span>
               </button>
             );
@@ -310,10 +310,10 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       </div>
 
       {/* Computed points preview */}
-      <div className="rounded border border-brass-700/40 bg-parchment-900/40 px-3 py-2 text-sm text-parchment-200">
-        This submission is worth <span className="font-bold text-brass-100">{points}</span> glory points
+      <div className="rounded border border-brass/40 bg-ink-2 px-3 py-2 text-sm text-parchment-dim">
+        This submission is worth <span className="font-bold text-brass-bright">{points}</span> glory points
         {adversary.userId && (
-          <> · opponent earns <span className="font-bold text-brass-100">{Math.max(1, Math.ceil(points / 2))}</span></>
+          <> · opponent earns <span className="font-bold text-brass-bright">{Math.max(1, Math.ceil(points / 2))}</span></>
         )}
         {currentSystem && <> · {currentSystem.short_name}</>}
         {currentSystem?.supports_size && <> · {size}</>}
@@ -328,40 +328,40 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
 
       {/* Title / description / image */}
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Battle title (optional)</span>
+        <span className="label">Battle title (optional)</span>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="The Siege of Vraks"
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100 placeholder:text-parchment-500"
+          className="input w-full"
         />
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Description / after-action report</span>
+        <span className="label">Description / after-action report</span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100 placeholder:text-parchment-500"
+          className="input w-full"
           placeholder="Tell the tale…"
         />
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium text-parchment-200">Image URL (optional)</span>
+        <span className="label">Image URL (optional)</span>
         <input
           type="url"
           value={imageUrl}
           onChange={(e) => setImageUrl(e.target.value)}
           placeholder="https://…"
-          className="mt-1 w-full rounded border border-brass-700/40 bg-parchment-950 px-3 py-2 text-parchment-100 placeholder:text-parchment-500"
+          className="input w-full"
         />
       </label>
 
       {error && (
-        <div className="rounded border border-red-700/60 bg-red-900/30 px-3 py-2 text-sm text-red-200">
+        <div className="border border-blood bg-blood/20 px-3 py-2 text-sm text-parchment">
           {error}
         </div>
       )}
@@ -369,7 +369,7 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       <button
         type="submit"
         disabled={submitting || userFactions.length === 0}
-        className="rounded border border-brass-500 bg-brass-700/40 px-4 py-2.5 font-cinzel text-brass-100 hover:bg-brass-600/40 disabled:opacity-50"
+        className="btn-primary disabled:opacity-50"
       >
         {submitting ? 'Submitting…' : 'Submit for Approval'}
       </button>
