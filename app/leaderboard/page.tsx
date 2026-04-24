@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { FactionTotal, PlayerTotal } from "@/lib/types";
@@ -97,7 +98,14 @@ export default async function LeaderboardPage() {
               {pt.map((p, i) => (
                 <tr key={p.player_id} className="border-b border-brass/5 hover:bg-brass/5">
                   <td className="p-3 font-display text-brass">{i + 1}</td>
-                  <td className="p-3 font-display text-parchment">{p.display_name}</td>
+                  <td className="p-3 font-display">
+                    <Link
+                      href={`/player/${p.player_id}`}
+                      className="text-parchment hover:text-brass-bright transition-colors"
+                    >
+                      {p.display_name}
+                    </Link>
+                  </td>
                   <td className="p-3 hidden sm:table-cell" style={{ color: p.faction_color ?? "#b8a888" }}>
                     {p.faction_name ?? "—"}
                   </td>
