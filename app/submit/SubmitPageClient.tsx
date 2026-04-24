@@ -102,9 +102,9 @@ function SimpleSubmitForm({
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   // Use the canonical POINT_PRESETS from lib/types.ts so the initial value
-  // matches one of the dropdown options (see #2).
+  // matches one of the tile options (see #2 and the painted/lore tile change).
   const [points, setPoints] = useState<number>(
-    kind === 'painted' ? POINT_PRESETS.model[0].value : 2,
+    kind === 'painted' ? POINT_PRESETS.model[0].value : POINT_PRESETS.lore[0].value,
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -213,39 +213,55 @@ function SimpleSubmitForm({
         />
       </label>
 
-      <label className="block">
-        <span className="label">
-          {kind === 'painted' ? 'Unit Size' : 'Claimed points'}
-        </span>
-        <select
-          value={points}
-          onChange={(e) => setPoints(Number(e.target.value))}
-          className="input w-full bg-ink text-parchment"
-        >
-          {kind === 'painted'
-            ? POINT_PRESETS.model.map((opt) => (
-                <option
-                  key={opt.value}
-                  value={opt.value}
-                  className="bg-ink text-parchment"
-                >
-                  {opt.label} · {opt.value} pts
-                </option>
-              ))
-            : POINT_PRESETS.lore.map((opt) => (
-                <option
-                  key={opt.value}
-                  value={opt.value}
-                  className="bg-ink text-parchment"
-                >
-                  {opt.label} · {opt.value} pts
-                </option>
-              ))}
-        </select>
-        <p className="mt-1 text-xs italic text-parchment-dark">
-          The Inquisition may adjust this value upon review.
-        </p>
-      </label>
+      {kind === 'painted' ? (
+        <div>
+          <span className="label">Unit Size</span>
+          <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+            {POINT_PRESETS.model.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setPoints(opt.value)}
+                className={`flex flex-col items-center rounded border px-3 py-2 text-center text-sm transition-colors hover:border-brass/50 ${
+                  points === opt.value
+                    ? 'border-brass bg-brass/10 text-parchment'
+                    : 'border-brass/20 text-parchment-dim'
+                }`}
+              >
+                <span>{opt.label}</span>
+                <span className="text-xs opacity-80">{opt.value} pts</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs italic text-parchment-dark">
+            The Inquisition may adjust this value upon review.
+          </p>
+        </div>
+      ) : (
+        <div>
+          <span className="label">Claimed points</span>
+          <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {POINT_PRESETS.lore.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setPoints(opt.value)}
+                className={`flex flex-col items-center rounded border px-3 py-2 text-center text-sm transition-colors hover:border-brass/50 ${
+                  points === opt.value
+                    ? 'border-brass bg-brass/10 text-parchment'
+                    : 'border-brass/20 text-parchment-dim'
+                }`}
+              >
+                <span>{opt.label}</span>
+                <span className="text-xs opacity-80">{opt.value} pts</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs italic text-parchment-dark">
+            The Inquisition may adjust this value upon review.
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="border border-blood bg-blood/20 px-3 py-2 text-sm text-parchment">
