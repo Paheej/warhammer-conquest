@@ -5,10 +5,16 @@ import type { FactionTotal, PlayerTotal } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function LeaderboardPage() {
+interface PageProps {
+  searchParams: Promise<{ faction?: string }>;
+}
+
+export default async function LeaderboardPage({ searchParams }: PageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
+
+  const { faction: factionFilter } = await searchParams;
 
   const [{ data: factions }, { data: players }] = await Promise.all([
     supabase
@@ -18,12 +24,30 @@ export default async function LeaderboardPage() {
     supabase
       .from("player_totals")
       .select("*")
-      .order("total_points", { ascending: false })
-      .limit(50),
+      .order("total_points", { ascending: false }),
   ]);
-
   const ft = (factions ?? []) as FactionTotal[];
-  const pt = (players ?? []) as PlayerTotal[];
+  const allPlayers = (players ?? []) as PlayerTotal[];
+
+  let pt: PlayerTotal[];
+  if (factionFilter) {
+    // Find the set of players with at least one approved deed aligned to the
+    // selected faction, then keep their full leaderboard rows. Totals match
+    // the unfiltered view — we only narrow *who* shows up. (Aggregating in
+    // JS / a one-shot id query avoids a dedicated view.)
+    const { data: aligned } = await supabase
+      .from("submissions")
+      .select("player_id")
+      .eq("status", "approved")
+      .eq("faction_id", factionFilter);
+
+    const ids = new Set((aligned ?? []).map((r) => r.player_id as string));
+    pt = allPlayers.filter((p) => ids.has(p.player_id)).slice(0, 50);
+  } else {
+    pt = allPlayers.slice(0, 50);
+  }
+
+  const activeFaction = factionFilter ? ft.find((f) => f.faction_id === factionFilter) : null;
 
   return (
     <div className="space-y-12 fade-up">
@@ -55,34 +79,70 @@ export default async function LeaderboardPage() {
               </tr>
             </thead>
             <tbody>
-              {ft.map((f, i) => (
-                <tr key={f.faction_id} className="border-b border-brass/5 hover:bg-brass/5">
-                  <td className="p-3 font-display text-brass">{i + 1}</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="inline-block w-1 h-8"
-                        style={{ backgroundColor: f.color }}
-                      />
-                      <span className="font-display text-parchment">{f.faction_name}</span>
-                    </div>
-                  </td>
-                  <td className="p-3 text-right font-body hidden sm:table-cell">{f.wins}</td>
-                  <td className="p-3 text-right font-body hidden md:table-cell">{f.models_painted}</td>
-                  <td className="p-3 text-right font-body hidden md:table-cell">{f.lore_submitted}</td>
-                  <td className="p-3 text-right font-body hidden sm:table-cell">{f.planets_controlled}</td>
-                  <td className="p-3 text-right font-display text-brass-bright">{f.total_points}</td>
-                </tr>
-              ))}
+              {ft.map((f, i) => {
+                const isActive = factionFilter === f.faction_id;
+                return (
+                  <tr
+                    key={f.faction_id}
+                    className={`border-b border-brass/5 transition-colors ${
+                      isActive ? "bg-brass/10" : "hover:bg-brass/5"
+                    }`}
+                  >
+                    <td className="p-3 font-display text-brass">{i + 1}</td>
+                    <td className="p-3">
+                      <Link
+                        href={isActive ? "/leaderboard" : `/leaderboard?faction=${f.faction_id}`}
+                        aria-label={
+                          isActive
+                            ? `Clear faction filter`
+                            : `Filter commanders by ${f.faction_name}`
+                        }
+                        className="flex items-center gap-3 text-parchment transition-colors hover:text-brass-bright"
+                      >
+                        <span
+                          className="inline-block w-1 h-8"
+                          style={{ backgroundColor: f.color }}
+                        />
+                        <span className="font-display">{f.faction_name}</span>
+                      </Link>
+                    </td>
+                    <td className="p-3 text-right font-body hidden sm:table-cell">{f.wins}</td>
+                    <td className="p-3 text-right font-body hidden md:table-cell">{f.models_painted}</td>
+                    <td className="p-3 text-right font-body hidden md:table-cell">{f.lore_submitted}</td>
+                    <td className="p-3 text-right font-body hidden sm:table-cell">{f.planets_controlled}</td>
+                    <td className="p-3 text-right font-display text-brass-bright">{f.total_points}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </section>
 
       <section>
-        <h2 className="font-display text-xl tracking-widest text-parchment mb-4">
-          COMMANDERS
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <h2 className="font-display text-xl tracking-widest text-parchment">
+            COMMANDERS
+          </h2>
+          {activeFaction && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-brass/40 bg-brass/10 px-3 py-0.5 text-xs">
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: activeFaction.color }}
+              />
+              <span className="text-parchment">
+                Aligned to <span className="font-display">{activeFaction.faction_name}</span>
+              </span>
+              <Link
+                href="/leaderboard"
+                aria-label="Clear faction filter"
+                className="text-parchment-dim hover:text-brass-bright"
+              >
+                ✕
+              </Link>
+            </span>
+          )}
+        </div>
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead>
@@ -95,24 +155,34 @@ export default async function LeaderboardPage() {
               </tr>
             </thead>
             <tbody>
-              {pt.map((p, i) => (
-                <tr key={p.player_id} className="border-b border-brass/5 hover:bg-brass/5">
-                  <td className="p-3 font-display text-brass">{i + 1}</td>
-                  <td className="p-3 font-display">
-                    <Link
-                      href={`/player/${p.player_id}`}
-                      className="text-parchment hover:text-brass-bright transition-colors"
-                    >
-                      {p.display_name}
-                    </Link>
+              {pt.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-6 text-center text-parchment-dim italic">
+                    {activeFaction
+                      ? `No commanders have rallied to ${activeFaction.faction_name} yet.`
+                      : "No commanders yet."}
                   </td>
-                  <td className="p-3 hidden sm:table-cell" style={{ color: p.faction_color ?? "#b8a888" }}>
-                    {p.faction_name ?? "—"}
-                  </td>
-                  <td className="p-3 text-right font-body hidden sm:table-cell">{p.approved_count}</td>
-                  <td className="p-3 text-right font-display text-brass-bright">{p.total_points}</td>
                 </tr>
-              ))}
+              ) : (
+                pt.map((p, i) => (
+                  <tr key={p.player_id} className="border-b border-brass/5 hover:bg-brass/5">
+                    <td className="p-3 font-display text-brass">{i + 1}</td>
+                    <td className="p-3 font-display">
+                      <Link
+                        href={`/player/${p.player_id}`}
+                        className="text-parchment hover:text-brass-bright transition-colors"
+                      >
+                        {p.display_name}
+                      </Link>
+                    </td>
+                    <td className="p-3 hidden sm:table-cell" style={{ color: p.faction_color ?? "#b8a888" }}>
+                      {p.faction_name ?? "—"}
+                    </td>
+                    <td className="p-3 text-right font-body hidden sm:table-cell">{p.approved_count}</td>
+                    <td className="p-3 text-right font-display text-brass-bright">{p.total_points}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
