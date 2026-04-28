@@ -17,7 +17,12 @@ interface Props {
 }
 
 export default function OrbitalMap({ planets, points, factions }: Props) {
+  // Two-state model: a hover overrides whatever is pinned, so moving the
+  // cursor to a new world swaps the panel immediately. A click pins the
+  // current planet so it survives mouse-leave; hovering a *different*
+  // world clears the pin (per spec). Clicking blank canvas also clears.
   const [hovered, setHovered] = useState<string | null>(null);
+  const [pinned, setPinned]   = useState<string | null>(null);
 
   const factionById = useMemo(() => {
     const m = new Map<string, MapFaction>();
@@ -36,13 +41,30 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
     return m;
   }, [points]);
 
-  const hoveredPlanet = hovered ? planets.find((p) => p.id === hovered) : null;
-  const hoveredPoints = hovered ? pointsByPlanet.get(hovered) ?? [] : [];
+  const activeId = hovered ?? pinned;
+  const hoveredPlanet = activeId ? planets.find((p) => p.id === activeId) : null;
+  const hoveredPoints = activeId ? pointsByPlanet.get(activeId) ?? [] : [];
+
+  function enterPlanet(id: string) {
+    setHovered(id);
+    if (pinned && pinned !== id) setPinned(null);
+  }
+  function leavePlanet() {
+    setHovered(null);
+  }
+  function clickPlanet(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    setPinned((prev) => (prev === id ? null : id));
+  }
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
-      {/* Map canvas */}
-      <div className="relative w-full overflow-hidden rounded border border-brass-700/40 bg-[#0b0a14] lg:flex-[2]">
+      {/* Map canvas. Clicks on the canvas (outside any planet button)
+          clear the pinned selection — planet onClick stops propagation. */}
+      <div
+        onClick={() => setPinned(null)}
+        className="relative w-full overflow-hidden rounded border border-brass-700/40 bg-[#0b0a14] lg:flex-[2]"
+      >
         {/* Starfield background */}
         <div
           aria-hidden
@@ -68,23 +90,26 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
             const controllingColor = p.controlling_faction_id
               ? factionById.get(p.controlling_faction_id)?.color ?? null
               : null;
-            const isHover = hovered === p.id;
+            const isActive = activeId === p.id;
+            const isPinned = pinned === p.id;
 
             return (
               <button
                 key={p.id}
                 type="button"
-                onMouseEnter={() => setHovered(p.id)}
-                onMouseLeave={() => setHovered(null)}
-                onFocus={() => setHovered(p.id)}
-                onBlur={() => setHovered(null)}
+                onMouseEnter={() => enterPlanet(p.id)}
+                onMouseLeave={leavePlanet}
+                onFocus={() => enterPlanet(p.id)}
+                onBlur={leavePlanet}
+                onClick={(e) => clickPlanet(p.id, e)}
                 className="group absolute -translate-x-1/2 -translate-y-1/2 transform"
                 style={{ left: `${x}%`, top: `${y}%` }}
                 aria-label={p.name}
+                aria-pressed={isPinned}
               >
                 {/* Control ring */}
                 <div
-                  className={`absolute inset-0 rounded-full transition-transform ${isHover ? 'scale-125' : 'scale-110'}`}
+                  className={`absolute inset-0 rounded-full transition-transform ${isActive ? 'scale-125' : 'scale-110'}`}
                   style={{
                     boxShadow: controllingColor
                       ? `0 0 0 2px ${controllingColor}, 0 0 24px ${controllingColor}66`
@@ -94,7 +119,7 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
                 {/* Planet body */}
                 <div
                   className={`relative h-10 w-10 overflow-hidden rounded-full border border-brass-700/60 transition-transform sm:h-12 sm:w-12 ${
-                    isHover ? 'scale-110' : ''
+                    isActive ? 'scale-110' : ''
                   }`}
                   style={{
                     backgroundColor: controllingColor ?? '#2b2840',
@@ -147,6 +172,12 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
                 </p>
               </div>
             </div>
+
+            {hoveredPlanet.description && (
+              <p className="mt-3 whitespace-pre-line font-body text-sm italic leading-relaxed text-parchment-dim">
+                {hoveredPlanet.description}
+              </p>
+            )}
 
             <h3 className="mt-4 font-cinzel text-sm uppercase tracking-wider text-brass-300">
               Contesting factions
