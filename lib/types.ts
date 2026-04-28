@@ -11,6 +11,7 @@ export type Profile = {
   display_name: string;
   faction_id: string | null;
   email: string | null;
+  avatar_url: string | null;
   is_admin: boolean;
   created_at: string;
 };
