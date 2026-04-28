@@ -209,53 +209,55 @@ export default async function PlayerProfilePage({ params }: PageProps) {
             {activityRows.map((a) => (
               <li
                 key={a.submission_id}
-                className="group relative rounded border border-brass-700/40 bg-parchment-900/50 p-3 transition-colors hover:border-brass-500/60"
+                className="group relative rounded border border-brass-700/40 bg-parchment-900/50 p-3 transition-colors hover:border-brass-500/60 hover:bg-brass-700/10"
               >
                 <Link
                   href={`/submission/${a.submission_id}`}
                   aria-label={`View deed: ${a.title ?? a.kind}`}
                   className="absolute inset-0 z-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset"
                 />
-                <div className="relative z-10 flex flex-wrap items-center gap-2 text-xs text-parchment-300">
-                  <span className="rounded bg-brass-700/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-brass-100">
-                    {a.kind}
-                  </span>
-                  {a.game_system_short && (
-                    <span className="rounded border border-brass-700/40 px-1.5 py-0.5 uppercase">
-                      {a.game_system_short}
+                <div className="relative z-10 flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-parchment-300">
+                    <span className="rounded bg-brass-700/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-brass-100">
+                      {a.kind}
                     </span>
-                  )}
-                  {a.result && (
-                    <span className={`rounded px-1.5 py-0.5 uppercase ${
-                      a.result === 'win' ? 'bg-green-900/40 text-green-200'
-                      : a.result === 'loss' ? 'bg-red-900/40 text-red-200'
-                      : 'bg-yellow-900/40 text-yellow-200'
-                    }`}>
-                      {a.result}
-                    </span>
-                  )}
-                  {a.planet_name && (
-                    <Link href={`/map?planet=${a.planet_id}`} className="relative z-10 text-brass-300 hover:text-brass-100">
-                      ◈ {a.planet_name}
-                    </Link>
-                  )}
-                  {a.adversary_name && (
-                    <span>
-                      vs{' '}
-                      <Link
-                        href={a.adversary_user_id ? `/player/${a.adversary_user_id}` : '#'}
-                        className="relative z-10 text-brass-300 hover:text-brass-100"
-                      >
-                        {a.adversary_name}
+                    {a.game_system_short && (
+                      <span className="rounded border border-brass-700/40 px-1.5 py-0.5 uppercase">
+                        {a.game_system_short}
+                      </span>
+                    )}
+                    {a.result && (
+                      <span className={`rounded px-1.5 py-0.5 uppercase ${
+                        a.result === 'win' ? 'bg-green-900/40 text-green-200'
+                        : a.result === 'loss' ? 'bg-red-900/40 text-red-200'
+                        : 'bg-yellow-900/40 text-yellow-200'
+                      }`}>
+                        {a.result}
+                      </span>
+                    )}
+                    {a.planet_name && (
+                      <Link href={`/map?planet=${a.planet_id}`} className="text-brass-300 hover:text-brass-100">
+                        ◈ {a.planet_name}
                       </Link>
+                    )}
+                    {a.adversary_name && (
+                      <span>
+                        vs{' '}
+                        <Link
+                          href={a.adversary_user_id ? `/player/${a.adversary_user_id}` : '#'}
+                          className="text-brass-300 hover:text-brass-100"
+                        >
+                          {a.adversary_name}
+                        </Link>
+                      </span>
+                    )}
+                    <span className="ml-auto text-parchment-400">
+                      {new Date(a.created_at).toLocaleDateString()}
                     </span>
-                  )}
-                  <span className="ml-auto text-parchment-400">
-                    {new Date(a.created_at).toLocaleDateString()}
-                  </span>
+                  </div>
+                  {a.title && <p className="font-cinzel text-parchment-100 group-hover:text-brass-200 transition-colors">{a.title}</p>}
+                  {a.description && <p className="text-sm text-parchment-300">{a.description}</p>}
                 </div>
-                {a.title && <p className="mt-1 font-cinzel text-parchment-100 group-hover:text-brass-200 transition-colors">{a.title}</p>}
-                {a.description && <p className="mt-1 text-sm text-parchment-300">{a.description}</p>}
               </li>
             ))}
           </ul>
