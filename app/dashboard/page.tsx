@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import FactionMembership from '@/components/FactionMembership';
+import KindBadge from '@/components/KindBadge';
 
 export const dynamic = 'force-dynamic';
 
@@ -151,11 +152,16 @@ export default async function DashboardPage() {
         ) : (
           <ul className="mt-3 flex flex-col divide-y divide-brass-700/20">
             {subs.map((s) => (
-              <li key={s.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
-                <span className="rounded bg-brass-700/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brass-100">
-                  {s.kind}
-                </span>
-                <span className="text-parchment-100">{s.title ?? '(untitled)'}</span>
+              <li key={s.id} className="group relative flex flex-wrap items-center gap-2 px-2 py-2 text-sm transition-colors hover:bg-brass/10">
+                {/* Stretched overlay sits on top so clicks anywhere on the row navigate.
+                    No inner links exist here, so a single overlay is sufficient. */}
+                <Link
+                  href={`/submission/${s.id}`}
+                  aria-label={`View deed: ${s.title ?? s.kind}`}
+                  className="absolute inset-0 z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset"
+                />
+                <KindBadge kind={s.kind} />
+                <span className="text-parchment transition-colors group-hover:text-brass-bright">{s.title ?? '(untitled)'}</span>
                 {s.planets?.name && (
                   <span className="text-parchment-400">· {s.planets.name}</span>
                 )}

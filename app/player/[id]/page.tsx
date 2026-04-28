@@ -10,6 +10,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import KindBadge from '@/components/KindBadge';
 import type { ActivityFeedItem } from '@/lib/types';
 
 interface PageProps {
@@ -209,48 +210,71 @@ export default async function PlayerProfilePage({ params }: PageProps) {
             {activityRows.map((a) => (
               <li
                 key={a.submission_id}
-                className="rounded border border-brass-700/40 bg-parchment-900/50 p-3"
+                className="group relative flex gap-3 rounded border border-brass/30 bg-ink-2/60 p-3 transition-colors hover:border-brass/60 hover:bg-brass/10"
               >
-                <div className="flex flex-wrap items-center gap-2 text-xs text-parchment-300">
-                  <span className="rounded bg-brass-700/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-brass-100">
-                    {a.kind}
-                  </span>
-                  {a.game_system_short && (
-                    <span className="rounded border border-brass-700/40 px-1.5 py-0.5 uppercase">
-                      {a.game_system_short}
-                    </span>
-                  )}
-                  {a.result && (
-                    <span className={`rounded px-1.5 py-0.5 uppercase ${
-                      a.result === 'win' ? 'bg-green-900/40 text-green-200'
-                      : a.result === 'loss' ? 'bg-red-900/40 text-red-200'
-                      : 'bg-yellow-900/40 text-yellow-200'
-                    }`}>
-                      {a.result}
-                    </span>
-                  )}
-                  {a.planet_name && (
-                    <Link href={`/map?planet=${a.planet_id}`} className="text-brass-300 hover:text-brass-100">
-                      ◈ {a.planet_name}
-                    </Link>
-                  )}
-                  {a.adversary_name && (
-                    <span>
-                      vs{' '}
-                      <Link
-                        href={a.adversary_user_id ? `/player/${a.adversary_user_id}` : '#'}
-                        className="text-brass-300 hover:text-brass-100"
-                      >
-                        {a.adversary_name}
+                {/* Stretched overlay: a real anchor sits above all content so clicks
+                    anywhere on the card navigate to the submission detail. Inner
+                    links (planet, adversary) are bumped to z-20 to remain clickable. */}
+                <Link
+                  href={`/submission/${a.submission_id}`}
+                  aria-label={`View deed: ${a.title ?? a.kind}`}
+                  className="absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset"
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-parchment-dim">
+                    <KindBadge kind={a.kind} />
+                    {a.game_system_short && (
+                      <span className="rounded border border-brass/40 px-1.5 py-0.5 uppercase">
+                        {a.game_system_short}
+                      </span>
+                    )}
+                    {a.result && (
+                      <span className={`rounded px-1.5 py-0.5 uppercase ${
+                        a.result === 'win' ? 'bg-green-900/40 text-green-200'
+                        : a.result === 'loss' ? 'bg-red-900/40 text-red-200'
+                        : 'bg-yellow-900/40 text-yellow-200'
+                      }`}>
+                        {a.result}
+                      </span>
+                    )}
+                    {a.planet_name && (
+                      <Link href={`/map?planet=${a.planet_id}`} className="relative z-20 text-brass hover:text-brass-bright">
+                        ◈ {a.planet_name}
                       </Link>
+                    )}
+                    {a.adversary_name && (
+                      <span>
+                        vs{' '}
+                        <Link
+                          href={a.adversary_user_id ? `/player/${a.adversary_user_id}` : '#'}
+                          className="relative z-20 text-brass hover:text-brass-bright"
+                        >
+                          {a.adversary_name}
+                        </Link>
+                      </span>
+                    )}
+                    <span className="ml-auto text-parchment-dark">
+                      {new Date(a.created_at).toLocaleDateString()}
                     </span>
+                  </div>
+                  {a.title && (
+                    <p className="font-display text-parchment transition-colors group-hover:text-brass-bright">
+                      {a.title}
+                    </p>
                   )}
-                  <span className="ml-auto text-parchment-400">
-                    {new Date(a.created_at).toLocaleDateString()}
-                  </span>
+                  {a.description && <p className="text-sm text-parchment-dim">{a.description}</p>}
                 </div>
-                {a.title && <p className="mt-1 font-cinzel text-parchment-100">{a.title}</p>}
-                {a.description && <p className="mt-1 text-sm text-parchment-300">{a.description}</p>}
+                {a.image_url && (
+                  <div className="shrink-0 self-start">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={a.image_url}
+                      alt={a.title ?? 'Deed image'}
+                      className="h-20 w-20 rounded border border-brass/40 object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ul>
