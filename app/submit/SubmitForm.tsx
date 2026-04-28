@@ -18,7 +18,7 @@ const TYPE_LABELS: Record<SubmissionType, { title: string; desc: string }> = {
     desc: "Record the outcome of a tabletop engagement.",
   },
   model: {
-    title: "Painted Model",
+    title: "Painted Unit",
     desc: "Show the work of your brushes. Points awarded per scale.",
   },
   lore: {

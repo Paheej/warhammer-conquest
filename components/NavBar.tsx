@@ -83,7 +83,7 @@ export function NavBar() {
           className="flex items-center gap-2 font-cinzel text-lg font-bold tracking-wide text-brass-100 sm:text-xl"
         >
           <span aria-hidden className="text-brass-400">✠</span>
-          <span>Crusade Ledger</span>
+          <span>Campaign Chronicle</span>
         </Link>
 
         {/* Desktop nav */}

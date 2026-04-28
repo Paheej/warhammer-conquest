@@ -3,7 +3,7 @@ import "./globals.css";
 import { NavBar } from "@/components/NavBar";
 
 export const metadata: Metadata = {
-  title: "Crusade Ledger — Campaign of the Burning Star",
+  title: "Campaign Chronicle — Campaign of the Burning Star",
   description:
     "Record your victories. Claim the stars. A Warhammer 40,000 campaign tracker.",
 };

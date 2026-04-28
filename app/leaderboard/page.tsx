@@ -48,7 +48,7 @@ export default async function LeaderboardPage() {
                 <th className="text-left p-3 w-12">#</th>
                 <th className="text-left p-3">Faction</th>
                 <th className="text-right p-3 hidden sm:table-cell">Wins</th>
-                <th className="text-right p-3 hidden md:table-cell">Models</th>
+                <th className="text-right p-3 hidden md:table-cell">Painted Units</th>
                 <th className="text-right p-3 hidden md:table-cell">Tales</th>
                 <th className="text-right p-3 hidden sm:table-cell">Worlds</th>
                 <th className="text-right p-3">Glory</th>
