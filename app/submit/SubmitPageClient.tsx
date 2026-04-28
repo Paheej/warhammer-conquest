@@ -27,7 +27,7 @@ interface Props {
 
 const KINDS: Array<{ id: Kind; label: string; icon: string; desc: string }> = [
   { id: 'battle',  label: 'Battle Report', icon: '⚔', desc: 'Log a game and claim glory on a world.' },
-  { id: 'painted', label: 'Painted Model', icon: '🖌', desc: 'Share miniatures you finished painting.' },
+  { id: 'painted', label: 'Painted Unit', icon: '🖌', desc: 'Share miniatures you finished painting.' },
   { id: 'lore',    label: 'Lore',          icon: '📜', desc: 'Write a piece of campaign fiction.' },
 ];
 

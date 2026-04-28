@@ -19,7 +19,7 @@ export default function HomePage() {
         </div>
         <div className="relative">
           <p className="font-cinzel text-xs uppercase tracking-[0.3em] text-brass-300">
-            ✠ The Crusade Ledger ✠
+            ✠ The Campaign Chronicle ✠
           </p>
           <h1 className="mt-2 font-cinzel text-3xl text-brass-100 sm:text-5xl">
             Record your victories.<br className="hidden sm:block" /> Claim the stars.
