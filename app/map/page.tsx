@@ -17,6 +17,7 @@ export const revalidate = 30;
 export interface MapPlanet {
   id: string;
   name: string;
+  description: string | null;
   position_x: number | null;
   position_y: number | null;
   claim_threshold: number;
@@ -39,7 +40,7 @@ export interface MapFaction {
 export default async function MapPage() {
   const supabase = await createClient();
   const [pRes, ppRes, fRes] = await Promise.all([
-    supabase.from('planets').select('id, name, position_x, position_y, claim_threshold:threshold, image_url, controlling_faction_id'),
+    supabase.from('planets').select('id, name, description, position_x, position_y, claim_threshold:threshold, image_url, controlling_faction_id'),
     supabase.from('planet_points').select('planet_id, faction_id, points'),
     supabase.from('factions').select('id, name, color'),
   ]);
