@@ -6,6 +6,7 @@
 
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import KindBadge from '@/components/KindBadge';
 import type { ActivityFeedItem } from '@/lib/types';
 
 function timeAgo(iso: string): string {
@@ -23,21 +24,6 @@ function timeAgo(iso: string): string {
   if (mo  < 12)     return `${mo}mo ago`;
   const yr  = Math.floor(mo / 12);
   return `${yr}y ago`;
-}
-
-function KindBadge({ kind }: { kind: string }) {
-  const map: Record<string, { label: string; cls: string; icon: string }> = {
-    battle:  { label: 'Battle',  cls: 'border-red-700/60   bg-red-900/30   text-red-200',    icon: '⚔' },
-    painted: { label: 'Painted', cls: 'border-blue-700/60  bg-blue-900/30  text-blue-200',   icon: '🖌' },
-    lore:    { label: 'Lore',    cls: 'border-amber-700/60 bg-amber-900/30 text-amber-200',  icon: '📜' },
-    bonus:   { label: 'Bonus',   cls: 'border-purple-700/60 bg-purple-900/30 text-purple-200', icon: '✦' },
-  };
-  const cfg = map[kind] ?? { label: kind, cls: 'border-brass/40 bg-brass/20 text-brass-bright', icon: '✠' };
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${cfg.cls}`}>
-      <span aria-hidden>{cfg.icon}</span> {cfg.label}
-    </span>
-  );
 }
 
 function ResultBadge({ result }: { result: string | null }) {
@@ -89,22 +75,21 @@ export default async function ActivityFeed({ limit = 15 }: { limit?: number }) {
           key={it.submission_id}
           className="group relative flex flex-col gap-3 rounded border border-brass/20 bg-ink-2/60 p-4 transition-colors hover:border-brass/60 sm:flex-row"
         >
-          {/* Stretched overlay link — makes the whole card clickable.
-              Inner <Link> elements sit above this via relative z-10 so
-              they still get their own click targets (player profile,
-              planet page, adversary profile). The rounded + inset ring
-              appears on keyboard focus so tab-navigation is visible. */}
+          {/* Stretched overlay link — sits ABOVE the card content (z-10) so a
+              click anywhere on the card navigates to the submission detail.
+              Inner <Link> elements (avatar, name, planet, adversary) are
+              promoted to z-20 so they remain clickable on top of the overlay. */}
           <Link
             href={`/submission/${it.submission_id}`}
             aria-label={`View details: ${it.title ?? 'deed'}`}
-            className="absolute inset-0 z-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+            className="absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
           />
 
           {/* Avatar */}
-          <div className="relative z-10 flex shrink-0 items-start gap-3 sm:flex-col sm:items-center">
+          <div className="flex shrink-0 items-start gap-3 sm:flex-col sm:items-center">
             <Link
               href={it.user_id ? `/player/${it.user_id}` : '#'}
-              className="block h-12 w-12 shrink-0 overflow-hidden rounded-full border border-brass/50 bg-ink-2"
+              className="relative z-20 block h-12 w-12 shrink-0 overflow-hidden rounded-full border border-brass/50 bg-ink-2"
             >
               {it.avatar_url ? (
                 // Using <img> rather than next/image so external URLs don't need next.config.js tweaks.
@@ -118,12 +103,12 @@ export default async function ActivityFeed({ limit = 15 }: { limit?: number }) {
             </Link>
           </div>
 
-          <div className="relative z-10 flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
             {/* Header row */}
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <Link
                 href={it.user_id ? `/player/${it.user_id}` : '#'}
-                className="font-display text-parchment hover:text-brass-bright transition-colors"
+                className="relative z-20 font-display text-parchment hover:text-brass-bright transition-colors"
               >
                 {it.display_name}
               </Link>
@@ -160,7 +145,7 @@ export default async function ActivityFeed({ limit = 15 }: { limit?: number }) {
               {it.planet_name && (
                 <span>
                   <span className="text-brass">◈</span>{' '}
-                  <Link href={`/map?planet=${it.planet_id}`} className="relative z-10 hover:text-brass-bright">
+                  <Link href={`/map?planet=${it.planet_id}`} className="relative z-20 hover:text-brass-bright">
                     {it.planet_name}
                   </Link>
                 </span>
@@ -170,7 +155,7 @@ export default async function ActivityFeed({ limit = 15 }: { limit?: number }) {
                   vs{' '}
                   <Link
                     href={it.adversary_user_id ? `/player/${it.adversary_user_id}` : '#'}
-                    className="relative z-10 text-parchment hover:text-brass-bright"
+                    className="relative z-20 text-parchment hover:text-brass-bright"
                   >
                     {it.adversary_name}
                   </Link>
@@ -196,7 +181,7 @@ export default async function ActivityFeed({ limit = 15 }: { limit?: number }) {
               avoids the "cropped midsection" effect on portrait model
               photos. Click the card to see the full uncropped image. */}
           {it.image_url && (
-            <div className="relative z-10 shrink-0 self-start overflow-hidden rounded border border-brass/30 sm:order-last">
+            <div className="shrink-0 self-start overflow-hidden rounded border border-brass/30 sm:order-last">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={it.image_url}
