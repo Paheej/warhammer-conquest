@@ -209,14 +209,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
             {activityRows.map((a) => (
               <li
                 key={a.submission_id}
-                className="group relative rounded border border-brass-700/40 bg-parchment-900/50 p-3 transition-colors hover:border-brass-500/60 hover:bg-brass-700/10"
+                className="group flex gap-3 rounded border border-brass-700/40 bg-parchment-900/50 p-3 transition-colors hover:border-brass-500/60 hover:bg-brass-700/10"
               >
-                <Link
-                  href={`/submission/${a.submission_id}`}
-                  aria-label={`View deed: ${a.title ?? a.kind}`}
-                  className="absolute inset-0 z-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset"
-                />
-                <div className="relative z-10 flex flex-col gap-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-parchment-300">
                     <span className="rounded bg-brass-700/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-brass-100">
                       {a.kind}
@@ -255,9 +250,27 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                       {new Date(a.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  {a.title && <p className="font-cinzel text-parchment-100 group-hover:text-brass-200 transition-colors">{a.title}</p>}
+                  {a.title && (
+                    <Link
+                      href={`/submission/${a.submission_id}`}
+                      className="font-cinzel text-parchment-100 hover:text-brass-200 transition-colors"
+                    >
+                      {a.title}
+                    </Link>
+                  )}
                   {a.description && <p className="text-sm text-parchment-300">{a.description}</p>}
                 </div>
+                {a.image_url && (
+                  <Link href={`/submission/${a.submission_id}`} className="shrink-0 self-start">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={a.image_url}
+                      alt={a.title ?? 'Deed image'}
+                      className="h-20 w-20 rounded border border-brass-700/40 object-cover"
+                      loading="lazy"
+                    />
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
