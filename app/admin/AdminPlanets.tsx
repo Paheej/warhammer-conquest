@@ -1,16 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Planet, Faction } from "@/lib/types";
+import type {
+  Planet,
+  Faction,
+  GameSystem,
+  GameSystemId,
+  PlanetGameSystem,
+} from "@/lib/types";
 
 export function AdminPlanets({
   planets,
   factions,
+  gameSystems,
+  planetSystems,
 }: {
   planets: Planet[];
   factions: Faction[];
+  gameSystems: GameSystem[];
+  planetSystems: PlanetGameSystem[];
 }) {
   const router = useRouter();
   const [showNew, setShowNew] = useState(false);
@@ -22,6 +32,77 @@ export function AdminPlanets({
   const [threshold, setThreshold] = useState(100);
   const [x, setX] = useState(0.5);
   const [y, setY] = useState(0.5);
+
+  const initialAllowed = useMemo(() => {
+    const map = new Map<string, Set<GameSystemId>>();
+    for (const row of planetSystems) {
+      const set = map.get(row.planet_id) ?? new Set<GameSystemId>();
+      set.add(row.game_system_id);
+      map.set(row.planet_id, set);
+    }
+    return map;
+  }, [planetSystems]);
+
+  const [allowedByPlanet, setAllowedByPlanet] = useState<
+    Map<string, Set<GameSystemId>>
+  >(() => new Map(initialAllowed));
+  const [savingSystemsFor, setSavingSystemsFor] = useState<string | null>(null);
+
+  function getAllowed(planetId: string): Set<GameSystemId> {
+    return allowedByPlanet.get(planetId) ?? initialAllowed.get(planetId) ?? new Set();
+  }
+
+  function isDirty(planetId: string): boolean {
+    const current = allowedByPlanet.get(planetId);
+    if (!current) return false;
+    const original = initialAllowed.get(planetId) ?? new Set<GameSystemId>();
+    if (current.size !== original.size) return true;
+    for (const id of current) if (!original.has(id)) return true;
+    return false;
+  }
+
+  function toggleSystem(planetId: string, systemId: GameSystemId) {
+    setAllowedByPlanet((prev) => {
+      const next = new Map(prev);
+      const current = new Set(next.get(planetId) ?? initialAllowed.get(planetId) ?? []);
+      if (current.has(systemId)) current.delete(systemId);
+      else current.add(systemId);
+      next.set(planetId, current);
+      return next;
+    });
+  }
+
+  async function saveSystems(planetId: string) {
+    setSavingSystemsFor(planetId);
+    const supabase = createClient();
+    const allowed = getAllowed(planetId);
+
+    const { error: dErr } = await supabase
+      .from("planet_game_systems")
+      .delete()
+      .eq("planet_id", planetId);
+    if (dErr) {
+      setSavingSystemsFor(null);
+      return alert(dErr.message);
+    }
+
+    if (allowed.size > 0) {
+      const rows = Array.from(allowed).map((gsId) => ({
+        planet_id: planetId,
+        game_system_id: gsId,
+      }));
+      const { error: iErr } = await supabase
+        .from("planet_game_systems")
+        .insert(rows);
+      if (iErr) {
+        setSavingSystemsFor(null);
+        return alert(iErr.message);
+      }
+    }
+
+    setSavingSystemsFor(null);
+    router.refresh();
+  }
 
   async function createPlanet(e: React.FormEvent) {
     e.preventDefault();
@@ -123,29 +204,72 @@ export function AdminPlanets({
 
       <div className="space-y-3">
         {planets.map((p) => {
-          const controller = factions.find((f) => f.id === p.controlling_faction_id);
+          const allowed = getAllowed(p.id);
+          const dirty = isDirty(p.id);
+          const saving = savingSystemsFor === p.id;
           return (
-            <div key={p.id} className="card p-4 flex flex-wrap items-center gap-4">
-              <div className="flex-1 min-w-[200px]">
-                <div className="font-display text-parchment">{p.name}</div>
-                <div className="text-xs text-parchment-dark">
-                  threshold {p.threshold} · position ({p.position_x.toFixed(2)}, {p.position_y.toFixed(2)})
+            <div key={p.id} className="card p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="font-display text-parchment">{p.name}</div>
+                  <div className="text-xs text-parchment-dark">
+                    threshold {p.threshold} · position ({p.position_x.toFixed(2)}, {p.position_y.toFixed(2)})
+                  </div>
+                </div>
+                <select
+                  value={p.controlling_faction_id ?? ""}
+                  onChange={(e) => setController(p.id, e.target.value || null)}
+                  className="input bg-ink text-parchment"
+                >
+                  <option value="" className="bg-ink text-parchment">— Contested —</option>
+                  {factions.map((f) => (
+                    <option key={f.id} value={f.id} className="bg-ink text-parchment">{f.name}</option>
+                  ))}
+                </select>
+                <button onClick={() => deletePlanet(p.id)} className="btn-danger text-xs">
+                  Delete
+                </button>
+              </div>
+
+              <div className="border-t border-brass/20 pt-3">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div>
+                    <div className="label !mb-0">Allowed game systems</div>
+                    <div className="text-xs text-parchment-dark italic">
+                      {allowed.size === 0
+                        ? "No restrictions — every system allowed."
+                        : `${allowed.size} system${allowed.size === 1 ? "" : "s"} allowed`}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => saveSystems(p.id)}
+                    disabled={!dirty || saving}
+                    className="btn-ghost text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {gameSystems.map((s) => {
+                    const active = allowed.has(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => toggleSystem(p.id, s.id)}
+                        className={`rounded border px-3 py-1.5 text-sm transition-colors ${
+                          active
+                            ? "border-brass bg-brass/10 text-parchment"
+                            : "border-brass/20 text-parchment-dim hover:border-brass/50"
+                        }`}
+                      >
+                        {s.short_name || s.name}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <select
-                value={p.controlling_faction_id ?? ""}
-                onChange={(e) => setController(p.id, e.target.value || null)}
-                className="input"
-                style={controller ? { color: controller.color } : {}}
-              >
-                <option value="">— Contested —</option>
-                {factions.map((f) => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                ))}
-              </select>
-              <button onClick={() => deletePlanet(p.id)} className="btn-danger text-xs">
-                Delete
-              </button>
             </div>
           );
         })}

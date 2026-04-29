@@ -3,7 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminQueue } from "./AdminQueue";
 import { AdminPlanets } from "./AdminPlanets";
 import { AdminFactions } from "./AdminFactions";
-import type { Submission, Faction, Planet, Profile } from "@/lib/types";
+import type {
+  Submission,
+  Faction,
+  Planet,
+  Profile,
+  GameSystem,
+  PlanetGameSystem,
+} from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +40,8 @@ export default async function AdminPage() {
     { data: pending },
     { data: planets },
     { data: factions },
+    { data: gameSystems },
+    { data: planetSystems },
   ] = await Promise.all([
     supabase
       .from("submissions")
@@ -41,6 +50,8 @@ export default async function AdminPage() {
       .order("created_at", { ascending: true }),
     supabase.from("planets").select("*").order("name"),
     supabase.from("factions").select("*").order("name"),
+    supabase.from("game_systems").select("*").order("sort_order"),
+    supabase.from("planet_game_systems").select("planet_id, game_system_id"),
   ]);
 
   return (
@@ -76,6 +87,8 @@ export default async function AdminPage() {
         <AdminPlanets
           planets={(planets ?? []) as Planet[]}
           factions={(factions ?? []) as Faction[]}
+          gameSystems={(gameSystems ?? []) as GameSystem[]}
+          planetSystems={(planetSystems ?? []) as PlanetGameSystem[]}
         />
       </section>
 
