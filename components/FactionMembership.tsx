@@ -104,16 +104,27 @@ export default function FactionMembership({ userId }: Props) {
     setBusy(null);
   }
 
-  if (loading) return <div className="text-sm text-parchment-400">Loading faction memberships…</div>;
+  if (loading) {
+    return (
+      <section className="card p-6">
+        <div className="font-display uppercase tracking-widest text-xs text-brass mb-2">
+          Faction Memberships
+        </div>
+        <p className="text-sm text-parchment-dim italic">Loading…</p>
+      </section>
+    );
+  }
 
   const joined = memberships
     .map((m) => ({ ...m, faction: allFactions.find((f) => f.id === m.faction_id) }))
     .filter((row) => row.faction);
 
   return (
-    <section className="rounded border border-brass-700/40 bg-parchment-900/40 p-4">
-      <h2 className="font-cinzel text-lg text-brass-100">Faction Memberships</h2>
-      <p className="mt-1 text-sm text-parchment-300">
+    <section className="card p-6">
+      <div className="font-display uppercase tracking-widest text-xs text-brass mb-2">
+        Faction Memberships
+      </div>
+      <p className="text-sm text-parchment-dim italic">
         You may pledge your banner to multiple factions. One is marked <em>primary</em> — it&apos;s the default
         when submitting deeds, and is used for leaderboard display.
       </p>
@@ -128,16 +139,16 @@ export default function FactionMembership({ userId }: Props) {
         {joined.map((row) => (
           <li
             key={row.faction_id}
-            className="flex flex-wrap items-center gap-2 rounded border border-brass-700/40 bg-parchment-950 px-3 py-2"
+            className="flex flex-wrap items-center gap-2 rounded border border-brass/30 bg-ink/60 px-3 py-2"
           >
             <span
               className="inline-block h-3 w-3 rounded-full"
               style={{ backgroundColor: row.faction?.color ?? '#7a5b20' }}
               aria-hidden
             />
-            <span className="font-cinzel text-parchment-100">{row.faction?.name}</span>
+            <span className="font-display text-parchment">{row.faction?.name}</span>
             {row.is_primary && (
-              <span className="rounded border border-brass-600 bg-brass-700/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brass-100">
+              <span className="rounded border border-brass/60 bg-brass/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brass-bright">
                 Primary
               </span>
             )}
@@ -147,7 +158,7 @@ export default function FactionMembership({ userId }: Props) {
                   type="button"
                   onClick={() => makePrimary(row.faction_id)}
                   disabled={busy === row.faction_id}
-                  className="rounded border border-brass-700/40 px-2 py-1 text-xs text-parchment-200 hover:text-brass-100 disabled:opacity-50"
+                  className="rounded border border-brass/40 px-2 py-1 text-xs text-parchment-dim hover:border-brass hover:text-brass-bright disabled:opacity-50"
                 >
                   Make primary
                 </button>
@@ -167,15 +178,15 @@ export default function FactionMembership({ userId }: Props) {
 
       {availableToJoin.length > 0 && (
         <div className="mt-4">
-          <label className="block text-sm text-parchment-200">Pledge to another faction</label>
-          <div className="mt-1 flex flex-wrap gap-2">
+          <span className="label">Pledge to another faction</span>
+          <div className="flex flex-wrap gap-2">
             {availableToJoin.map((f) => (
               <button
                 key={f.id}
                 type="button"
                 onClick={() => join(f.id)}
                 disabled={busy === f.id}
-                className="rounded border border-brass-700/40 bg-parchment-950 px-3 py-1.5 text-sm text-parchment-100 hover:border-brass-500 disabled:opacity-50"
+                className="rounded border border-brass/30 bg-ink/60 px-3 py-1.5 text-sm text-parchment hover:border-brass hover:text-brass-bright disabled:opacity-50"
               >
                 + {f.name}
               </button>
