@@ -45,17 +45,17 @@ export default function SubmitPageClient({ planets, userFactions, planetSystems,
               key={k.id}
               type="button"
               onClick={() => setKind(k.id)}
-              className={`rounded border px-3 py-3 text-left transition-colors ${
+              className={`rounded border px-3 py-3 text-left transition-colors hover:border-brass/50 ${
                 active
-                  ? 'border-brass-500 bg-brass-700/30 text-brass-100'
-                  : 'border-brass-700/40 bg-parchment-950 text-parchment-200 hover:border-brass-600'
+                  ? 'border-brass bg-brass/10 text-parchment'
+                  : 'border-brass/20 text-parchment-dim'
               }`}
             >
-              <div className="flex items-center gap-2 font-cinzel text-base">
+              <div className="flex items-center gap-2 font-display text-base">
                 <span aria-hidden>{k.icon}</span>
                 {k.label}
               </div>
-              <p className="mt-1 text-xs text-parchment-400">{k.desc}</p>
+              <p className="mt-1 text-xs text-parchment-dark">{k.desc}</p>
             </button>
           );
         })}

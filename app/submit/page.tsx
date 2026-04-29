@@ -62,17 +62,17 @@ export default async function SubmitPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
       <header>
-        <p className="font-cinzel text-xs uppercase tracking-[0.3em] text-brass-300">
+        <p className="font-display text-xs uppercase tracking-[0.3em] text-brass">
           ✠ Submit a Deed ✠
         </p>
-        <h1 className="mt-1 font-cinzel text-3xl text-brass-100">Chronicle Your Contribution</h1>
-        <p className="mt-2 text-sm text-parchment-300">
+        <h1 className="mt-1 font-display text-3xl text-parchment">Chronicle Your Contribution</h1>
+        <p className="mt-2 font-body text-sm text-parchment-dim">
           All submissions await inquisitorial review. Glory is awarded once approved.
         </p>
       </header>
 
       {userFactions.length === 0 && (
-        <div className="mt-4 rounded border border-yellow-700/60 bg-yellow-900/20 p-3 text-sm text-yellow-200">
+        <div className="mt-4 rounded border border-crusade bg-crusade/10 p-3 text-sm text-parchment">
           You&apos;re not pledged to a faction yet. Visit your{' '}
           <a href="/dashboard" className="underline">dashboard</a> to join one before submitting deeds.
         </div>

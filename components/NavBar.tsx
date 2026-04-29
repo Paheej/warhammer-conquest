@@ -75,14 +75,14 @@ export function NavBar() {
   const visibleLinks = LINKS.filter((l) => !l.adminOnly || isAdmin);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-brass-700/50 bg-parchment-900/90 backdrop-blur-sm supports-[backdrop-filter]:bg-parchment-900/75">
+    <header className="sticky top-0 z-40 border-b border-brass/50 bg-ink-2/90 backdrop-blur-sm supports-[backdrop-filter]:bg-ink-2/75">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         {/* Brand */}
         <Link
           href="/"
-          className="flex items-center gap-2 font-cinzel text-lg font-bold tracking-wide text-brass-100 sm:text-xl"
+          className="flex items-center gap-2 font-display text-lg font-bold tracking-wide text-parchment sm:text-xl"
         >
-          <span aria-hidden className="text-brass-400">✠</span>
+          <span aria-hidden className="text-brass">✠</span>
           <span>Campaign Chronicle</span>
         </Link>
 
@@ -96,28 +96,28 @@ export function NavBar() {
                 href={link.href}
                 className={`rounded px-3 py-1.5 text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-brass-700/30 text-brass-100'
-                    : 'text-parchment-200 hover:bg-brass-700/20 hover:text-brass-100'
+                    ? 'bg-brass/10 text-parchment'
+                    : 'text-parchment-dim hover:bg-brass/10 hover:text-parchment'
                 }`}
               >
                 {link.label}
               </Link>
             );
           })}
-          <div className="ml-2 flex items-center gap-2 border-l border-brass-700/40 pl-3">
+          <div className="ml-2 flex items-center gap-2 border-l border-brass/40 pl-3">
             {session ? (
               <SignOutButton />
             ) : (
               <>
                 <Link
                   href="/auth/login"
-                  className="rounded px-3 py-1.5 text-sm text-parchment-200 hover:text-brass-100"
+                  className="rounded px-3 py-1.5 text-sm text-parchment-dim hover:text-parchment"
                 >
                   Login
                 </Link>
                 <Link
                   href="/auth/signup"
-                  className="rounded border border-brass-600 bg-brass-700/20 px-3 py-1.5 text-sm font-medium text-brass-100 hover:bg-brass-700/40"
+                  className="rounded border border-brass bg-brass/10 px-3 py-1.5 text-sm font-medium text-parchment hover:bg-brass/20"
                 >
                   Sign up
                 </Link>
@@ -129,7 +129,7 @@ export function NavBar() {
         {/* Mobile toggle */}
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded border border-brass-700/40 text-brass-100 md:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded border border-brass/40 text-parchment md:hidden"
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
@@ -150,7 +150,7 @@ export function NavBar() {
 
       {/* Mobile sheet */}
       {open && (
-        <div className="border-t border-brass-700/40 bg-parchment-900/95 md:hidden">
+        <div className="border-t border-brass/40 bg-ink-2/95 md:hidden">
           <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
             {visibleLinks.map((link) => {
               const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
@@ -160,31 +160,31 @@ export function NavBar() {
                   href={link.href}
                   className={`rounded px-3 py-2.5 text-base font-medium transition-colors ${
                     active
-                      ? 'bg-brass-700/30 text-brass-100'
-                      : 'text-parchment-200 hover:bg-brass-700/20 hover:text-brass-100'
+                      ? 'bg-brass/10 text-parchment'
+                      : 'text-parchment-dim hover:bg-brass/10 hover:text-parchment'
                   }`}
                 >
                   {link.label}
                 </Link>
               );
             })}
-            <div className="mt-2 border-t border-brass-700/30 pt-2">
+            <div className="mt-2 border-t border-brass/30 pt-2">
               {session ? (
                 <div className="flex items-center justify-between gap-2 px-3 py-2">
-                  <span className="truncate text-sm text-parchment-300">{session.email}</span>
+                  <span className="truncate text-sm text-parchment-dim">{session.email}</span>
                   <SignOutButton />
                 </div>
               ) : (
                 <div className="flex items-center gap-2 px-3 py-2">
                   <Link
                     href="/auth/login"
-                    className="flex-1 rounded border border-brass-700/40 px-3 py-2 text-center text-sm text-parchment-200"
+                    className="flex-1 rounded border border-brass/40 px-3 py-2 text-center text-sm text-parchment-dim"
                   >
                     Login
                   </Link>
                   <Link
                     href="/auth/signup"
-                    className="flex-1 rounded border border-brass-600 bg-brass-700/20 px-3 py-2 text-center text-sm font-medium text-brass-100"
+                    className="flex-1 rounded border border-brass bg-brass/10 px-3 py-2 text-center text-sm font-medium text-parchment"
                   >
                     Sign up
                   </Link>

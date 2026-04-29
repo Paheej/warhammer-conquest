@@ -93,7 +93,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
       {/* Header */}
-      <header className="flex flex-col items-start gap-4 rounded border border-brass-700/40 bg-parchment-900/50 p-4 sm:flex-row sm:items-center sm:p-6">
+      <header className="card flex flex-col items-start gap-4 p-4 sm:flex-row sm:items-center sm:p-6">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-brass/50 bg-ink-2">
           {p.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -109,20 +109,20 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           )}
         </div>
         <div className="flex-1">
-          <h1 className="font-cinzel text-2xl text-brass-100 sm:text-3xl">
+          <h1 className="font-display text-2xl text-parchment sm:text-3xl">
             {p.display_name ?? 'Unknown Commander'}
           </h1>
           {primary && (
-            <div className="mt-1 inline-flex items-center gap-2 text-sm text-parchment-200">
+            <div className="mt-1 inline-flex items-center gap-2 text-sm text-parchment-dim">
               <span
                 className="inline-block h-3 w-3 rounded-full"
                 style={{ backgroundColor: primary.color ?? '#7a5b20' }}
                 aria-hidden
               />
-              Champion of <strong>{primary.name}</strong>
+              Champion of <strong className="text-parchment">{primary.name}</strong>
             </div>
           )}
-          <p className="mt-1 text-xs text-parchment-400">
+          <p className="mt-1 text-xs text-parchment-dark">
             Enlisted {new Date(p.created_at).toLocaleDateString()}
           </p>
         </div>
@@ -138,21 +138,21 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       {/* Memberships */}
       {memberRows.length > 0 && (
         <section className="mt-6">
-          <h2 className="font-cinzel text-xl text-brass-100">Banners Pledged</h2>
+          <h2 className="font-display text-xl text-parchment">Banners Pledged</h2>
           <ul className="mt-3 flex flex-wrap gap-2">
             {memberRows.map((m) => m.factions && (
               <li
                 key={m.faction_id}
-                className="inline-flex items-center gap-2 rounded border border-brass-700/40 bg-parchment-950 px-3 py-1.5 text-sm"
+                className="inline-flex items-center gap-2 rounded border border-brass/30 bg-ink px-3 py-1.5 text-sm"
               >
                 <span
                   className="inline-block h-3 w-3 rounded-full"
                   style={{ backgroundColor: m.factions.color ?? '#7a5b20' }}
                   aria-hidden
                 />
-                <span className="text-parchment-100">{m.factions.name}</span>
+                <span className="text-parchment">{m.factions.name}</span>
                 {m.is_primary && (
-                  <span className="rounded border border-brass-600 bg-brass-700/30 px-1.5 text-[10px] font-bold uppercase tracking-wider text-brass-100">
+                  <span className="rounded border border-brass bg-brass/10 px-1.5 text-[10px] font-bold uppercase tracking-wider text-parchment">
                     Primary
                   </span>
                 )}
@@ -164,16 +164,16 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
       {/* ELO */}
       <section className="mt-8">
-        <h2 className="font-cinzel text-xl text-brass-100">Ratings</h2>
-        <p className="mt-1 text-sm text-parchment-300">
+        <h2 className="font-display text-xl text-parchment">Ratings</h2>
+        <p className="mt-1 text-sm text-parchment-dim">
           ELO is tracked per game system and faction. Opponents must be linked on submission for rating changes.
         </p>
         {eloRows.length === 0 ? (
-          <p className="mt-3 text-sm text-parchment-400">No rated games yet.</p>
+          <p className="mt-3 text-sm text-parchment-dark">No rated games yet.</p>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded border border-brass-700/40">
+          <div className="mt-3 overflow-x-auto rounded border border-brass/30">
             <table className="w-full min-w-[560px] text-sm">
-              <thead className="bg-parchment-900/70 text-left font-cinzel text-brass-200">
+              <thead className="bg-ink-2 text-left font-display text-brass">
                 <tr>
                   <th className="px-3 py-2">System</th>
                   <th className="px-3 py-2">Faction</th>
@@ -184,9 +184,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                   <th className="px-3 py-2 text-right">D</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-brass-700/20">
+              <tbody className="divide-y divide-brass/20">
                 {eloRows.map((r) => (
-                  <tr key={`${r.game_system_id}-${r.faction_id}`} className="text-parchment-200">
+                  <tr key={`${r.game_system_id}-${r.faction_id}`} className="text-parchment">
                     <td className="px-3 py-2">{r.game_systems?.short_name ?? r.game_system_id}</td>
                     <td className="px-3 py-2">
                       <span className="inline-flex items-center gap-2">
@@ -197,7 +197,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                         {r.factions?.name ?? r.faction_id}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right font-bold text-brass-100">{r.rating}</td>
+                    <td className="px-3 py-2 text-right font-bold text-brass-bright">{r.rating}</td>
                     <td className="px-3 py-2 text-right">{r.games_played}</td>
                     <td className="px-3 py-2 text-right text-green-300">{r.wins}</td>
                     <td className="px-3 py-2 text-right text-red-300">{r.losses}</td>
@@ -212,9 +212,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
       {/* Recent activity */}
       <section className="mt-8">
-        <h2 className="font-cinzel text-xl text-brass-100">Chronicle</h2>
+        <h2 className="font-display text-xl text-parchment">Chronicle</h2>
         {activityRows.length === 0 ? (
-          <p className="mt-2 text-sm text-parchment-400">No approved deeds yet.</p>
+          <p className="mt-2 text-sm text-parchment-dark">No approved deeds yet.</p>
         ) : (
           <ul className="mt-3 flex flex-col gap-3">
             {activityRows.map((a) => (
@@ -296,9 +296,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
 function StatBlock({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded border border-brass-700/40 bg-parchment-950 px-3 py-2">
-      <div className="font-cinzel text-xl text-brass-100">{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-parchment-400">{label}</div>
+    <div className="rounded border border-brass/30 bg-ink px-3 py-2">
+      <div className="font-display text-xl text-brass-bright">{value}</div>
+      <div className="text-[10px] uppercase tracking-wider text-parchment-dark">{label}</div>
     </div>
   );
 }
