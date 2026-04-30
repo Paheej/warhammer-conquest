@@ -74,7 +74,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       .limit(25),
     supabase
       .from('submissions')
-      .select('kind:type, points', { count: 'exact' })
+      .select('type, result, points')
       .eq('player_id', id)
       .eq('status', 'approved'),
   ]);
@@ -83,10 +83,20 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   const eloRows     = (elo.data ?? [])         as unknown as EloRow[];
   const activityRows = (activity.data ?? [])   as unknown as ActivityFeedItem[];
 
-  const approvedSubs = (statsRes.data ?? []) as Array<{ kind: string; points: number | null }>;
+  const approvedSubs = (statsRes.data ?? []) as Array<{
+    type: string;
+    result: string | null;
+    points: number | null;
+  }>;
   const totalGlory = approvedSubs.reduce((acc, r) => acc + (r.points ?? 0), 0);
-  const byKind: Record<string, number> = {};
-  for (const s of approvedSubs) byKind[s.kind] = (byKind[s.kind] ?? 0) + 1;
+  let battles = 0;
+  let wins = 0;
+  for (const s of approvedSubs) {
+    if (s.type === 'game') {
+      battles += 1;
+      if (s.result === 'win') wins += 1;
+    }
+  }
 
   const primary = memberRows.find((m) => m.is_primary)?.factions;
 
@@ -128,9 +138,10 @@ export default async function PlayerProfilePage({ params }: PageProps) {
         </div>
 
         {/* Summary stats */}
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <StatBlock label="Glory" value={totalGlory} />
-          <StatBlock label="Battles" value={byKind.battle ?? 0} />
+        <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
+          <StatBlock label="Glory"   value={totalGlory} />
+          <StatBlock label="Battles" value={battles} />
+          <StatBlock label="Wins"    value={wins} />
           <StatBlock label="Deeds"   value={approvedSubs.length} />
         </div>
       </header>
