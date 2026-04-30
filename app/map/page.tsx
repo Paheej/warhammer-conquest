@@ -52,11 +52,11 @@ export default async function MapPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
       <header className="mb-6">
-        <p className="font-cinzel text-xs uppercase tracking-[0.3em] text-brass-300">
+        <p className="font-display text-xs uppercase tracking-[0.3em] text-brass">
           ✠ Orbital Chart ✠
         </p>
-        <h1 className="mt-1 font-cinzel text-3xl text-brass-100">The Theatre of War</h1>
-        <p className="mt-2 text-sm text-parchment-300">
+        <h1 className="mt-1 font-display text-3xl text-parchment">The Theatre of War</h1>
+        <p className="mt-2 font-body text-sm text-parchment-dim">
           Hover a world to see which factions contest it. The banner of the dominant faction
           flies over each planet claimed.
         </p>
