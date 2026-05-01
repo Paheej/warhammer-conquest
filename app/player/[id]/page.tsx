@@ -11,7 +11,17 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import KindBadge from '@/components/KindBadge';
-import type { ActivityFeedItem } from '@/lib/types';
+import AwardCard from '@/components/AwardCard';
+import HonoursStrip, { type FeaturedAward } from '@/components/HonoursStrip';
+import {
+  AWARD_CATEGORY_LABELS,
+  type ActivityFeedItem,
+  type Award,
+  type AwardCategory,
+  type PlayerAward,
+} from '@/lib/types';
+
+const CATEGORY_ORDER: AwardCategory[] = ['combat', 'painting', 'lore', 'conquest', 'cross'];
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -56,7 +66,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   if (!profile) notFound();
   const p = profile as ProfileRow;
 
-  const [memberships, elo, activity, statsRes] = await Promise.all([
+  const [memberships, elo, activity, statsRes, honoursRes] = await Promise.all([
     supabase
       .from('player_factions')
       .select('faction_id, is_primary, factions(id, name, color)')
@@ -77,11 +87,44 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       .select('type, result, points')
       .eq('player_id', id)
       .eq('status', 'approved'),
+    supabase
+      .from('player_awards')
+      .select('id, player_id, award_id, earned_at, is_featured, notified, awards(id, key, name, description, hint, tier, category, icon, sort_order)')
+      .eq('player_id', id)
+      .order('earned_at', { ascending: false }),
   ]);
 
   const memberRows  = (memberships.data ?? []) as unknown as FactionMembership[];
   const eloRows     = (elo.data ?? [])         as unknown as EloRow[];
   const activityRows = (activity.data ?? [])   as unknown as ActivityFeedItem[];
+
+  type HonourRow = PlayerAward & { awards: Award | null };
+  const honourRows = (honoursRes.data ?? []) as unknown as HonourRow[];
+
+  const featured: FeaturedAward[] = honourRows
+    .filter((r) => r.is_featured && r.awards)
+    .map((r) => ({
+      player_award: {
+        id: r.id,
+        player_id: r.player_id,
+        award_id: r.award_id,
+        earned_at: r.earned_at,
+        is_featured: r.is_featured,
+        notified: r.notified,
+      },
+      award: r.awards!,
+    }));
+
+  const earnedByCategory = new Map<AwardCategory, HonourRow[]>();
+  for (const r of honourRows) {
+    if (!r.awards) continue;
+    const list = earnedByCategory.get(r.awards.category) ?? [];
+    list.push(r);
+    earnedByCategory.set(r.awards.category, list);
+  }
+  for (const list of earnedByCategory.values()) {
+    list.sort((a, b) => (a.awards!.sort_order - b.awards!.sort_order));
+  }
 
   const approvedSubs = (statsRes.data ?? []) as Array<{
     type: string;
@@ -145,6 +188,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           <StatBlock label="Deeds"   value={approvedSubs.length} />
         </div>
       </header>
+
+      {/* Featured Honours */}
+      <HonoursStrip featured={featured} />
 
       {/* Memberships */}
       {memberRows.length > 0 && (
@@ -220,6 +266,42 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           </div>
         )}
       </section>
+
+      {/* All earned honours */}
+      {honourRows.length > 0 && (
+        <section className="mt-8">
+          <h2 className="font-display text-xl text-parchment">Honours</h2>
+          <div className="mt-3 space-y-5">
+            {CATEGORY_ORDER.map((cat) => {
+              const list = earnedByCategory.get(cat) ?? [];
+              if (list.length === 0) return null;
+              return (
+                <div key={cat}>
+                  <div className="mb-2 text-xs font-display uppercase tracking-widest text-brass-bright">
+                    {AWARD_CATEGORY_LABELS[cat]}
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {list.map((r) => (
+                      <AwardCard
+                        key={r.id}
+                        award={r.awards!}
+                        earned={{
+                          id: r.id,
+                          player_id: r.player_id,
+                          award_id: r.award_id,
+                          earned_at: r.earned_at,
+                          is_featured: r.is_featured,
+                          notified: r.notified,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Recent activity */}
       <section className="mt-8">

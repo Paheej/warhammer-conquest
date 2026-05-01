@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { FactionTotal, PlayerTotal } from "@/lib/types";
+import HonoursBadgeRow, { type HonourBadge } from "@/components/HonoursBadgeRow";
+import type { AwardTier, FactionTotal, PlayerTotal } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,48 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   }
 
   const activeFaction = factionFilter ? ft.find((f) => f.faction_id === factionFilter) : null;
+
+  // Honours for visible commanders. Pinned first, then by rarity descending.
+  const honoursByPlayer = new Map<string, HonourBadge[]>();
+  if (pt.length > 0) {
+    const { data: rawHonours } = await supabase
+      .from("player_awards")
+      .select("id, player_id, is_featured, awards(name, icon, tier)")
+      .in("player_id", pt.map((p) => p.player_id));
+
+    type HonourRow = {
+      id: string;
+      player_id: string;
+      is_featured: boolean;
+      awards: { name: string; icon: string; tier: AwardTier } | null;
+    };
+
+    const TIER_RANK: Record<AwardTier, number> = {
+      adamantium: 0,
+      legendary:  1,
+      honoured:   2,
+      common:     3,
+    };
+
+    for (const r of (rawHonours ?? []) as unknown as HonourRow[]) {
+      if (!r.awards) continue;
+      const list = honoursByPlayer.get(r.player_id) ?? [];
+      list.push({
+        player_award: { id: r.id, is_featured: r.is_featured },
+        award: r.awards,
+      });
+      honoursByPlayer.set(r.player_id, list);
+    }
+
+    for (const list of honoursByPlayer.values()) {
+      list.sort((a, b) => {
+        if (a.player_award.is_featured !== b.player_award.is_featured) {
+          return a.player_award.is_featured ? -1 : 1;
+        }
+        return TIER_RANK[a.award.tier] - TIER_RANK[b.award.tier];
+      });
+    }
+  }
 
   return (
     <div className="space-y-12 fade-up">
@@ -164,24 +207,30 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                   </td>
                 </tr>
               ) : (
-                pt.map((p, i) => (
-                  <tr key={p.player_id} className="border-b border-brass/5 hover:bg-brass/5">
-                    <td className="p-3 font-display text-brass">{i + 1}</td>
-                    <td className="p-3 font-display">
-                      <Link
-                        href={`/player/${p.player_id}`}
-                        className="text-parchment hover:text-brass-bright transition-colors"
-                      >
-                        {p.display_name}
-                      </Link>
-                    </td>
-                    <td className="p-3 hidden sm:table-cell" style={{ color: p.faction_color ?? "#b8a888" }}>
-                      {p.faction_name ?? "—"}
-                    </td>
-                    <td className="p-3 text-right font-body hidden sm:table-cell">{p.approved_count}</td>
-                    <td className="p-3 text-right font-display text-brass-bright">{p.total_points}</td>
-                  </tr>
-                ))
+                pt.map((p, i) => {
+                  const honours = honoursByPlayer.get(p.player_id) ?? [];
+                  return (
+                    <tr key={p.player_id} className="border-b border-brass/5 hover:bg-brass/5">
+                      <td className="p-3 font-display text-brass">{i + 1}</td>
+                      <td className="p-3 font-display">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <Link
+                            href={`/player/${p.player_id}`}
+                            className="text-parchment hover:text-brass-bright transition-colors"
+                          >
+                            {p.display_name}
+                          </Link>
+                          <HonoursBadgeRow badges={honours} />
+                        </div>
+                      </td>
+                      <td className="p-3 hidden sm:table-cell" style={{ color: p.faction_color ?? "#b8a888" }}>
+                        {p.faction_name ?? "—"}
+                      </td>
+                      <td className="p-3 text-right font-body hidden sm:table-cell">{p.approved_count}</td>
+                      <td className="p-3 text-right font-display text-brass-bright">{p.total_points}</td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
