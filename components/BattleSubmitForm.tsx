@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { uploadImage } from '@/lib/upload-image';
 import AdversaryPicker, { type AdversaryValue } from './AdversaryPicker';
 import type {
   GameSystem, GameSystemId, GameSize, BattleResult,
@@ -48,6 +49,7 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
   const [title, setTitle]         = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl]   = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [adversary, setAdversary] = useState<AdversaryValue>({
     name: '', userId: null, factionId: null, factionName: null,
   });
@@ -138,6 +140,17 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
 
     setSubmitting(true);
 
+    let finalImageUrl: string | null = imageUrl.trim() || null;
+    if (imageFile) {
+      try {
+        finalImageUrl = await uploadImage(imageFile);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Image upload failed.');
+        setSubmitting(false);
+        return;
+      }
+    }
+
     const payload: Record<string, unknown> = {
       player_id:    currentUserId,
       // UI kind is 'battle'; DB submission_type enum uses 'game'.
@@ -145,7 +158,7 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       status:     'pending',
       title:      title.trim() || `${result.toUpperCase()} vs ${adversary.name.trim()}`,
       body:       description.trim() || null,
-      image_url:  imageUrl.trim() || null,
+      image_url:  finalImageUrl,
       target_planet_id: planetId,
       faction_id: factionId,
       points,
@@ -349,16 +362,31 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
         />
       </label>
 
-      <label className="block">
-        <span className="label">Image URL (optional)</span>
+      <div>
+        <span className="label">Image (optional)</span>
         <input
-          type="url"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="https://…"
-          className="input w-full"
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+          className="input w-full file:bg-brass-dark file:text-parchment file:border-0 file:px-3 file:py-1 file:mr-3 file:font-display file:uppercase file:text-xs file:tracking-wider"
         />
-      </label>
+        <label className="mt-3 block">
+          <span className="label">Or paste an image URL</span>
+          <input
+            type="url"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="https://…"
+            className="input w-full"
+            disabled={!!imageFile}
+          />
+        </label>
+        {imageFile && (
+          <p className="mt-1 text-xs italic text-parchment-dark">
+            Uploading {imageFile.name} on submit. Clear the file to use a URL instead.
+          </p>
+        )}
+      </div>
 
       {error && (
         <div className="border border-blood bg-blood/20 px-3 py-2 text-sm text-parchment">
