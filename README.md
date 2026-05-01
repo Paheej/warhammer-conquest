@@ -11,7 +11,7 @@ A Warhammer 40,000 campaign tracker for gaming groups. Players log games, painte
 - **Real user accounts.** Email/password sign-up, plus Discord OAuth.
 - **Admin approval queue.** Points don't post until an admin approves — no faking results.
 - **Four submission types.** Game reports, painted models, lore, and admin-awarded bonuses.
-- **Image uploads.** Stored in Supabase Storage, publicly viewable. Players can also paste image URLs.
+- **Image uploads.** Hosted on Cloudinary (file or URL paste) for both deed submissions and player avatars — keeps Supabase storage usage minimal.
 - **Planet claim logic.** When a faction's points on a planet cross its threshold, the planet flips to their control automatically (enforced by a Postgres trigger, not client code).
 - **Interactive orbital map.** Hover a planet to see which factions are contesting it and how close each is to the threshold.
 - **Faction + player leaderboards.**
@@ -68,13 +68,15 @@ git push -u origin main
 
 1. Go to [vercel.com](https://vercel.com) and sign in with GitHub.
 2. Click **Add New → Project**, select your `crusade-ledger` repo.
-3. Before deploying, expand **Environment Variables** and add all three:
+3. Before deploying, expand **Environment Variables** and add all five:
 
    | Name | Value |
    |---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | Your Project URL from step 4 |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon public key from step 4 |
    | `NEXT_PUBLIC_ADMIN_EMAILS` | Comma-separated emails of admins, e.g. `you@example.com,friend@example.com` |
+   | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Your Cloudinary cloud name (top of [cloudinary.com](https://cloudinary.com) dashboard) |
+   | `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Name of an **Unsigned** upload preset (Settings → Upload → Upload presets → Add) |
 
 4. Click **Deploy**. Wait ~90 seconds. You'll get a URL like `crusade-ledger-xxx.vercel.app`.
 

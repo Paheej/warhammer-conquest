@@ -9,6 +9,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { uploadImage } from '@/lib/upload-image';
 import BattleSubmitForm from '@/components/BattleSubmitForm';
 import { POINT_PRESETS } from '@/lib/types';
 import type { GameSystemId } from '@/lib/types';
@@ -101,6 +102,7 @@ function SimpleSubmitForm({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   // Use the canonical POINT_PRESETS from lib/types.ts so the initial value
   // matches one of the tile options (see #2 and the painted/lore tile change).
   const [points, setPoints] = useState<number>(
@@ -116,7 +118,23 @@ function SimpleSubmitForm({
       setError('Planet and faction are required.');
       return;
     }
+    if (kind === 'painted' && !imageFile && !imageUrl.trim()) {
+      setError('Painted model submissions require an image (file or URL).');
+      return;
+    }
     setSubmitting(true);
+
+    let finalImageUrl: string | null = imageUrl.trim() || null;
+    if (imageFile) {
+      try {
+        finalImageUrl = await uploadImage(imageFile);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Image upload failed.');
+        setSubmitting(false);
+        return;
+      }
+    }
+
     // UI uses 'painted' / 'lore' / 'battle' for tab kinds; the DB
     // submission_type enum is ('game', 'model', 'lore', 'bonus'), so
     // map 'painted' -> 'model' before insert. (Battle submissions go
@@ -130,7 +148,7 @@ function SimpleSubmitForm({
       faction_id: factionId,
       title:      title.trim() || (kind === 'painted' ? 'Painted model' : 'Lore entry'),
       body:       description.trim() || null,
-      image_url:  imageUrl.trim() || null,
+      image_url:  finalImageUrl,
       points,
     });
     setSubmitting(false);
@@ -200,18 +218,35 @@ function SimpleSubmitForm({
         />
       </label>
 
-      <label className="block">
+      <div>
         <span className="label">
-          Image URL {kind === 'painted' && <span className="text-parchment-dark normal-case">(recommended)</span>}
+          Image {kind === 'painted'
+            ? <span className="text-parchment-dark normal-case">(required)</span>
+            : <span className="text-parchment-dark normal-case">(optional)</span>}
         </span>
         <input
-          type="url"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="https://…"
-          className="input w-full"
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+          className="input w-full file:bg-brass-dark file:text-parchment file:border-0 file:px-3 file:py-1 file:mr-3 file:font-display file:uppercase file:text-xs file:tracking-wider"
         />
-      </label>
+        <label className="mt-3 block">
+          <span className="label">Or paste an image URL</span>
+          <input
+            type="url"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="https://…"
+            className="input w-full"
+            disabled={!!imageFile}
+          />
+        </label>
+        {imageFile && (
+          <p className="mt-1 text-xs italic text-parchment-dark">
+            Uploading {imageFile.name} on submit. Clear the file to use a URL instead.
+          </p>
+        )}
+      </div>
 
       {kind === 'painted' ? (
         <div>
