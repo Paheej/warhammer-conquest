@@ -227,3 +227,42 @@ export interface SearchablePlayer {
   primary_faction_id: string | null;
   primary_faction_name: string | null;
 }
+
+export type AwardTier = 'common' | 'honoured' | 'legendary' | 'adamantium';
+export type AwardCategory = 'combat' | 'painting' | 'lore' | 'conquest' | 'cross';
+
+export interface Award {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  hint: string;
+  tier: AwardTier;
+  category: AwardCategory;
+  icon: string;
+  sort_order: number;
+}
+
+export interface PlayerAward {
+  id: string;
+  player_id: string;
+  award_id: string;
+  earned_at: string;
+  is_featured: boolean;
+  notified: boolean;
+}
+
+export const AWARD_TIER_LABELS: Record<AwardTier, string> = {
+  common:     'Common',
+  honoured:   'Honoured',
+  legendary:  'Legendary',
+  adamantium: 'Adamantium',
+};
+
+export const AWARD_CATEGORY_LABELS: Record<AwardCategory, string> = {
+  combat:   'Combat',
+  painting: 'Painting',
+  lore:     'Lore & Narrative',
+  conquest: 'Conquest',
+  cross:    'Cross-cutting',
+};

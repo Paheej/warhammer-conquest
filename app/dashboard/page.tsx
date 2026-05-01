@@ -6,6 +6,7 @@
 //   * User's faction memberships (multi-faction manager)
 //   * User's own ELO ratings
 //   * User's recent submissions with status
+//   * User's earned/in-progress/locked awards
 // =====================================================================
 
 import Link from 'next/link';
@@ -13,8 +14,12 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import FactionMembership from '@/components/FactionMembership';
 import KindBadge from '@/components/KindBadge';
+import AwardCard from '@/components/AwardCard';
+import AwardToaster from '@/components/AwardToaster';
+import HonoursStrip, { type FeaturedAward } from '@/components/HonoursStrip';
 import { DashboardProfile } from './DashboardProfile';
-import type { Profile } from '@/lib/types';
+import type { Award, AwardCategory, PlayerAward, Profile } from '@/lib/types';
+import { AWARD_CATEGORY_LABELS } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,12 +45,31 @@ interface SubRow {
   planets: { name: string } | null;
 }
 
+const CATEGORY_ORDER: AwardCategory[] = ['combat', 'painting', 'lore', 'conquest', 'cross'];
+
+// Count-based awards: key -> target count and which counter feeds it.
+const PROGRESS_TARGETS: Record<string, { target: number; counter: 'game' | 'model' | 'lore' | 'distinct_types' }> = {
+  first_blood:            { target: 1,  counter: 'game' },
+  veteran:                { target: 3,  counter: 'game' },
+  honored_of_the_chapter: { target: 10, counter: 'game' },
+  warmaster:              { target: 20, counter: 'game' },
+  brush_initiate:         { target: 1,  counter: 'model' },
+  production_painter:     { target: 3,  counter: 'model' },
+  master_artisan:         { target: 10, counter: 'model' },
+  painting_daemon:        { target: 20, counter: 'model' },
+  remembrancer:           { target: 1,  counter: 'lore' },
+  chronicler:             { target: 3,  counter: 'lore' },
+  loremaster:             { target: 10, counter: 'lore' },
+  keeper_of_secrets:      { target: 20, counter: 'lore' },
+  accept_any_challenge:   { target: 4,  counter: 'distinct_types' },
+};
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login?next=/dashboard');
 
-  const [profileRes, eloRes, subsRes] = await Promise.all([
+  const [profileRes, eloRes, subsRes, awardsRes, playerAwardsRes, gameCountRes, modelCountRes, loreCountRes, bonusCountRes] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, display_name, faction_id, email, avatar_url, is_admin, created_at')
@@ -62,14 +86,66 @@ export default async function DashboardPage() {
       .eq('player_id', user.id)
       .order('created_at', { ascending: false })
       .limit(25),
+    supabase
+      .from('awards')
+      .select('id, key, name, description, hint, tier, category, icon, sort_order')
+      .order('sort_order', { ascending: true }),
+    supabase
+      .from('player_awards')
+      .select('id, player_id, award_id, earned_at, is_featured, notified')
+      .eq('player_id', user.id),
+    supabase
+      .from('submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', user.id).eq('type', 'game').eq('status', 'approved'),
+    supabase
+      .from('submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', user.id).eq('type', 'model').eq('status', 'approved'),
+    supabase
+      .from('submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', user.id).eq('type', 'lore').eq('status', 'approved'),
+    supabase
+      .from('submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', user.id).eq('type', 'bonus').eq('status', 'approved'),
   ]);
 
   const profile = (profileRes.data ?? null) as Profile | null;
   const elo  = (eloRes.data ?? []) as unknown as EloRow[];
   const subs = (subsRes.data ?? []) as unknown as SubRow[];
+  const awards = (awardsRes.data ?? []) as Award[];
+  const playerAwards = (playerAwardsRes.data ?? []) as PlayerAward[];
+
+  const gameCount  = gameCountRes.count  ?? 0;
+  const modelCount = modelCountRes.count ?? 0;
+  const loreCount  = loreCountRes.count  ?? 0;
+  const bonusCount = bonusCountRes.count ?? 0;
+  const distinctTypes = [gameCount, modelCount, loreCount, bonusCount].filter((n) => n > 0).length;
+
+  const counters = { game: gameCount, model: modelCount, lore: loreCount, distinct_types: distinctTypes };
+  const earnedById = new Map(playerAwards.map((pa) => [pa.award_id, pa]));
+
+  const featured: FeaturedAward[] = playerAwards
+    .filter((pa) => pa.is_featured)
+    .map((pa) => {
+      const a = awards.find((x) => x.id === pa.award_id);
+      return a ? { player_award: pa, award: a } : null;
+    })
+    .filter((x): x is FeaturedAward => x !== null);
+
+  const awardsByCategory = new Map<AwardCategory, Award[]>();
+  for (const a of awards) {
+    const list = awardsByCategory.get(a.category) ?? [];
+    list.push(a);
+    awardsByCategory.set(a.category, list);
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
+      <AwardToaster userId={user.id} />
+
       <header className="flex items-center gap-3">
         <div className="h-14 w-14 overflow-hidden rounded-full border border-brass/50 bg-ink-2">
           {profile?.avatar_url ? (
@@ -100,6 +176,9 @@ export default async function DashboardPage() {
           View public profile →
         </Link>
       </header>
+
+      {/* Pinned honours hero strip */}
+      <HonoursStrip featured={featured} />
 
       {/* Profile editor */}
       {profile && (
@@ -160,6 +239,45 @@ export default async function DashboardPage() {
         )}
       </section>
 
+      {/* Honours */}
+      <section className="card p-6 mt-6">
+        <div className="font-display uppercase tracking-widest text-xs text-brass mb-3">
+          Your Honors
+        </div>
+        <p className="text-xs text-parchment-dim italic mb-4">
+          Awards are derived from approved submissions. Pin up to three to display at the top of your dashboard.
+        </p>
+        {CATEGORY_ORDER.map((cat) => {
+          const list = awardsByCategory.get(cat) ?? [];
+          if (list.length === 0) return null;
+          return (
+            <div key={cat} className="mt-4 first:mt-0">
+              <div className="font-display text-[11px] uppercase tracking-widest text-brass-bright mb-2">
+                {AWARD_CATEGORY_LABELS[cat]}
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {list.map((a) => {
+                  const earned = earnedById.get(a.id) ?? null;
+                  const cfg = PROGRESS_TARGETS[a.key];
+                  const progress = !earned && cfg
+                    ? { current: counters[cfg.counter], target: cfg.target }
+                    : null;
+                  return (
+                    <AwardCard
+                      key={a.id}
+                      award={a}
+                      earned={earned}
+                      progress={progress}
+                      showFeaturedToggle
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
       {/* Submissions */}
       <section className="card p-6 mt-6">
         <div className="flex items-center justify-between gap-2 mb-2">
@@ -209,6 +327,7 @@ export default async function DashboardPage() {
           </ul>
         )}
       </section>
+
     </main>
   );
 }
