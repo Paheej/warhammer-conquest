@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { NavBar } from "@/components/NavBar";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Campaign Chronicle — Campaign of the Burning Star",
@@ -34,6 +35,18 @@ export default function RootLayout({
           </div>
           <p className="mt-4">In the grim darkness of the far future, there is only war.</p>
         </footer>
+        <Toaster
+          position="top-right"
+          theme="dark"
+          richColors={false}
+          toastOptions={{
+            classNames: {
+              toast: "!bg-ink-2 !border !border-brass/40 !text-parchment !font-body",
+              title: "!font-display !tracking-wider !text-brass-bright",
+              description: "!text-parchment-dim !text-xs",
+            },
+          }}
+        />
       </body>
     </html>
   );
