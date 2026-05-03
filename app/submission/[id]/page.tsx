@@ -26,10 +26,16 @@ function formatDate(iso: string): string {
 }
 
 const KIND_LABELS: Record<string, { label: string; icon: string }> = {
-  battle:  { label: 'Battle Report', icon: '⚔' },
-  painted: { label: 'Painted',       icon: '🖌' },
-  lore:    { label: 'Lore',          icon: '📜' },
-  bonus:   { label: 'Bonus',         icon: '✦' },
+  battle:     { label: 'Battle Report', icon: '⚔' },
+  painted:    { label: 'Painted',       icon: '🖌' },
+  scribe:     { label: 'Scribe',        icon: '📜' },
+  loremaster: { label: 'Loremaster',    icon: '📖' },
+  bonus:      { label: 'Bonus',         icon: '✦' },
+};
+
+const LORE_FORMAT_LABELS: Record<string, { label: string; icon: string }> = {
+  novel:     { label: 'Novel',     icon: '📕' },
+  audiobook: { label: 'Audiobook', icon: '🎧' },
 };
 
 export default async function SubmissionDetailPage({ params }: PageProps) {
@@ -110,6 +116,25 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
             <span className="font-display text-parchment">{it.display_name}</span>
           )}
         </div>
+
+        {/* Loremaster format + rating */}
+        {it.kind === 'loremaster' && (it.lore_format || it.lore_rating) && (
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+            {it.lore_format && LORE_FORMAT_LABELS[it.lore_format] && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-indigo-700/60 bg-indigo-900/30 px-2 py-0.5 text-xs font-medium text-indigo-200">
+                <span aria-hidden>{LORE_FORMAT_LABELS[it.lore_format].icon}</span>
+                {LORE_FORMAT_LABELS[it.lore_format].label}
+              </span>
+            )}
+            {it.lore_rating !== null && it.lore_rating !== undefined && (
+              <span className="inline-flex items-center gap-0.5 text-brass-bright" aria-label={`${it.lore_rating} out of 5`}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i}>{i < (it.lore_rating ?? 0) ? '★' : '☆'}</span>
+                ))}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Full-size image — object-contain so nothing gets cropped. */}
         {it.image_url && (

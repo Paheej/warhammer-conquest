@@ -117,6 +117,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                 <th className="text-right p-3 hidden sm:table-cell">Wins</th>
                 <th className="text-right p-3 hidden md:table-cell">Painted Units</th>
                 <th className="text-right p-3 hidden md:table-cell">Tales</th>
+                <th className="text-right p-3 hidden md:table-cell">Lore Read</th>
                 <th className="text-right p-3 hidden sm:table-cell">Worlds</th>
                 <th className="text-right p-3">Glory</th>
               </tr>
@@ -151,7 +152,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                     </td>
                     <td className="p-3 text-right font-body hidden sm:table-cell">{f.wins}</td>
                     <td className="p-3 text-right font-body hidden md:table-cell">{f.models_painted}</td>
-                    <td className="p-3 text-right font-body hidden md:table-cell">{f.lore_submitted}</td>
+                    <td className="p-3 text-right font-body hidden md:table-cell">{f.lore_written}</td>
+                    <td className="p-3 text-right font-body hidden md:table-cell">{f.lore_read}</td>
                     <td className="p-3 text-right font-body hidden sm:table-cell">{f.planets_controlled}</td>
                     <td className="p-3 text-right font-display text-brass-bright">{f.total_points}</td>
                   </tr>
