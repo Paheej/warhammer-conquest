@@ -6,3 +6,11 @@ node_modules/
 *.log
 .vercel
 next-env.d.ts
+
+# Build artifacts
+tsconfig.tsbuildinfo
+package-lock.json
+
+# Local working notes / scratch
+recap.md
+supabase/tmp_schema_dump_*.csv
