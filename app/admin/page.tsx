@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminQueue } from "./AdminQueue";
 import { AdminPlanets } from "./AdminPlanets";
 import { AdminFactions } from "./AdminFactions";
+import { AdminSeason } from "./AdminSeason";
 import type {
   Submission,
   Faction,
@@ -97,6 +98,13 @@ export default async function AdminPage() {
           FACTIONS
         </h2>
         <AdminFactions factions={(factions ?? []) as Faction[]} />
+      </section>
+
+      <section>
+        <h2 className="font-display text-2xl tracking-widest text-parchment mb-4">
+          SEASON ADMINISTRATION
+        </h2>
+        <AdminSeason />
       </section>
     </div>
   );
