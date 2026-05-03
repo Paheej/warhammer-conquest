@@ -5,10 +5,8 @@
 // system allowlist) and hands it off to a client wrapper that lets the
 // user pick which kind of submission they're making.
 //
-// For 'battle' kind, uses the new BattleSubmitForm.
-// For 'painted' / 'lore' / 'bonus' we render a simpler form inline so
-// the submit page works end-to-end. If you already have richer forms
-// for those kinds, swap in your existing components.
+// 'battle' uses BattleSubmitForm; 'loremaster' has its own form for
+// format/rating/reflection; 'painted' and 'scribe' share SimpleSubmitForm.
 // =====================================================================
 
 import { redirect } from 'next/navigation';
