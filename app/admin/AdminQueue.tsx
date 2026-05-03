@@ -91,6 +91,17 @@ export function AdminQueue({
                       {s.result}
                     </span>
                   )}
+                  {s.type === "loremaster" && s.lore_format && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-indigo-700/60 bg-indigo-900/30 px-2 py-0.5 text-xs font-medium text-indigo-200">
+                      <span aria-hidden>{s.lore_format === "novel" ? "📕" : "🎧"}</span>
+                      {s.lore_format === "novel" ? "Novel" : "Audiobook"}
+                    </span>
+                  )}
+                  {s.type === "loremaster" && s.lore_rating !== null && (
+                    <span className="text-sm text-brass-bright" aria-label={`${s.lore_rating} out of 5`}>
+                      {Array.from({ length: 5 }).map((_, i) => (i < (s.lore_rating ?? 0) ? "★" : "☆")).join("")}
+                    </span>
+                  )}
                 </div>
                 <h3 className="font-display text-xl text-parchment">{s.title}</h3>
                 <div className="mt-1 text-sm text-parchment-dim font-body">

@@ -28,9 +28,10 @@ export type Planet = {
   created_at: string;
 };
 
-export type SubmissionType = "game" | "model" | "lore" | "bonus";
+export type SubmissionType = "game" | "model" | "scribe" | "loremaster" | "bonus";
 export type SubmissionStatus = "pending" | "approved" | "rejected";
 export type GameResult = "win" | "loss" | "draw";
+export type LoreFormat = "novel" | "audiobook";
 
 export type Submission = {
   id: string;
@@ -49,6 +50,10 @@ export type Submission = {
   reviewed_at: string | null;
   review_notes: string | null;
   created_at: string;
+  lore_title: string | null;
+  lore_format: LoreFormat | null;
+  lore_rating: number | null;
+  lore_reflection: string | null;
 };
 
 export type FactionTotal = {
@@ -58,7 +63,8 @@ export type FactionTotal = {
   total_points: number;
   wins: number;
   models_painted: number;
-  lore_submitted: number;
+  lore_written: number;
+  lore_read: number;
   planets_controlled: number;
 };
 
@@ -95,10 +101,13 @@ export const POINT_PRESETS: Record<SubmissionType, { label: string; value: numbe
     { label: "Vehicle / monster", value: 8 },
     { label: "Titanic", value: 25 },
   ],
-  lore: [
+  scribe: [
     { label: "Short vignette (<500 words)", value: 3 },
     { label: "Short story (500-1500 words)", value: 6 },
     { label: "Long-form narrative (1500+ words)", value: 10 },
+  ],
+  loremaster: [
+    { label: "Lore deed", value: 1 },
   ],
   bonus: [
     { label: "Small bonus", value: 5 },
@@ -193,7 +202,7 @@ export interface EloConfig {
 
 export interface ActivityFeedItem {
   submission_id: string;
-  kind: 'battle' | 'painted' | 'lore' | 'bonus' | string;
+  kind: 'battle' | 'painted' | 'scribe' | 'loremaster' | 'bonus' | string;
   status: 'approved';
   created_at: string;
   title: string | null;
@@ -202,6 +211,9 @@ export interface ActivityFeedItem {
   points: number | null;
   result: BattleResult | null;
   game_size: GameSize | null;
+  lore_title: string | null;
+  lore_format: LoreFormat | null;
+  lore_rating: number | null;
   user_id: string | null;
   display_name: string;
   avatar_url: string | null;

@@ -48,20 +48,22 @@ interface SubRow {
 const CATEGORY_ORDER: AwardCategory[] = ['combat', 'painting', 'lore', 'conquest', 'cross'];
 
 // Count-based awards: key -> target count and which counter feeds it.
-const PROGRESS_TARGETS: Record<string, { target: number; counter: 'game' | 'model' | 'lore' | 'distinct_types' }> = {
-  first_blood:            { target: 1,  counter: 'game' },
-  veteran:                { target: 3,  counter: 'game' },
-  honored_of_the_chapter: { target: 10, counter: 'game' },
-  warmaster:              { target: 20, counter: 'game' },
-  brush_initiate:         { target: 1,  counter: 'model' },
-  production_painter:     { target: 3,  counter: 'model' },
-  master_artisan:         { target: 10, counter: 'model' },
-  painting_daemon:        { target: 20, counter: 'model' },
-  remembrancer:           { target: 1,  counter: 'lore' },
-  chronicler:             { target: 3,  counter: 'lore' },
-  loremaster:             { target: 10, counter: 'lore' },
-  keeper_of_secrets:      { target: 20, counter: 'lore' },
-  accept_any_challenge:   { target: 4,  counter: 'distinct_types' },
+const PROGRESS_TARGETS: Record<string, { target: number; counter: 'game' | 'model' | 'scribe' | 'loremaster' | 'distinct_types' }> = {
+  first_blood:                 { target: 1,   counter: 'game' },
+  veteran:                     { target: 3,   counter: 'game' },
+  honored_of_the_chapter:      { target: 10,  counter: 'game' },
+  warmaster:                   { target: 20,  counter: 'game' },
+  brush_initiate:              { target: 1,   counter: 'model' },
+  production_painter:          { target: 3,   counter: 'model' },
+  master_artisan:              { target: 10,  counter: 'model' },
+  painting_daemon:             { target: 20,  counter: 'model' },
+  remembrancer:                { target: 1,   counter: 'scribe' },
+  chronicler:                  { target: 3,   counter: 'scribe' },
+  master_scribe:               { target: 10,  counter: 'scribe' },
+  keeper_of_secrets:           { target: 20,  counter: 'scribe' },
+  witness_of_the_word:         { target: 15,  counter: 'loremaster' },
+  keeper_of_the_black_library: { target: 100, counter: 'loremaster' },
+  accept_any_challenge:        { target: 4,   counter: 'distinct_types' },
 };
 
 export default async function DashboardPage() {
@@ -69,7 +71,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login?next=/dashboard');
 
-  const [profileRes, eloRes, subsRes, awardsRes, playerAwardsRes, gameCountRes, modelCountRes, loreCountRes, bonusCountRes] = await Promise.all([
+  const [profileRes, eloRes, subsRes, awardsRes, playerAwardsRes, gameCountRes, modelCountRes, scribeCountRes, loremasterCountRes] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, display_name, faction_id, email, avatar_url, is_admin, created_at')
@@ -105,11 +107,11 @@ export default async function DashboardPage() {
     supabase
       .from('submissions')
       .select('id', { count: 'exact', head: true })
-      .eq('player_id', user.id).eq('type', 'lore').eq('status', 'approved'),
+      .eq('player_id', user.id).eq('type', 'scribe').eq('status', 'approved'),
     supabase
       .from('submissions')
       .select('id', { count: 'exact', head: true })
-      .eq('player_id', user.id).eq('type', 'bonus').eq('status', 'approved'),
+      .eq('player_id', user.id).eq('type', 'loremaster').eq('status', 'approved'),
   ]);
 
   const profile = (profileRes.data ?? null) as Profile | null;
@@ -118,13 +120,14 @@ export default async function DashboardPage() {
   const awards = (awardsRes.data ?? []) as Award[];
   const playerAwards = (playerAwardsRes.data ?? []) as PlayerAward[];
 
-  const gameCount  = gameCountRes.count  ?? 0;
-  const modelCount = modelCountRes.count ?? 0;
-  const loreCount  = loreCountRes.count  ?? 0;
-  const bonusCount = bonusCountRes.count ?? 0;
-  const distinctTypes = [gameCount, modelCount, loreCount, bonusCount].filter((n) => n > 0).length;
+  const gameCount       = gameCountRes.count       ?? 0;
+  const modelCount      = modelCountRes.count      ?? 0;
+  const scribeCount     = scribeCountRes.count     ?? 0;
+  const loremasterCount = loremasterCountRes.count ?? 0;
+  // Bonus is admin-only and excluded from Accept Any Challenge.
+  const distinctTypes = [gameCount, modelCount, scribeCount, loremasterCount].filter((n) => n > 0).length;
 
-  const counters = { game: gameCount, model: modelCount, lore: loreCount, distinct_types: distinctTypes };
+  const counters = { game: gameCount, model: modelCount, scribe: scribeCount, loremaster: loremasterCount, distinct_types: distinctTypes };
   const earnedById = new Map(playerAwards.map((pa) => [pa.award_id, pa]));
 
   const featured: FeaturedAward[] = playerAwards

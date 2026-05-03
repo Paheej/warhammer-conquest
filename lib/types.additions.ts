@@ -85,9 +85,11 @@ export interface EloConfig {
   k_factor: number;
 }
 
+export type LoreFormat = 'novel' | 'audiobook';
+
 export interface ActivityFeedItem {
   submission_id: string;
-  kind: 'battle' | 'painted' | 'lore' | 'bonus' | string;
+  kind: 'battle' | 'painted' | 'scribe' | 'loremaster' | 'bonus' | string;
   status: 'approved';
   created_at: string;
   title: string | null;
@@ -96,6 +98,9 @@ export interface ActivityFeedItem {
   points: number | null;
   result: BattleResult | null;
   game_size: GameSize | null;
+  lore_title: string | null;
+  lore_format: LoreFormat | null;
+  lore_rating: number | null;
   user_id: string | null;
   display_name: string;
   avatar_url: string | null;
