@@ -70,13 +70,14 @@ You'll need free accounts on **Supabase**, **Vercel**, and **Cloudinary**, plus 
 
 ### 2. Run the database setup
 
-The schema is split into two SQL files because PostgreSQL forbids referencing a newly added enum value in the same transaction that adds it. Run them in order:
+The schema is split into SQL files because PostgreSQL forbids referencing a newly added enum value in the same transaction that adds it. Run them in order:
 
 1. In your Supabase project, open **SQL Editor → New query**.
 2. Open `supabase/migrations/0001_schema.sql` from this repo, paste the entire contents into the editor, and click **Run**. You should see "Success. No rows returned." This creates every table, view, trigger, RLS policy, storage bucket, the awards catalogue, the five seeded game systems, and seed factions/planets.
 3. Open a fresh **New query**, paste the contents of `supabase/migrations/0002_features.sql`, and **Run**. This adds the loremaster reading-track features and Season Administration RPC.
+4. Open a fresh **New query**, paste the contents of `supabase/migrations/0003_fix_award_evaluation_timing.sql`, and **Run**. This fixes an off-by-one in award evaluation so threshold-based badges (First Blood, Brush Initiate, etc.) fire on the first qualifying approval rather than the second.
 
-Both files are idempotent (they use `if not exists` / `on conflict do update`), so you can safely re-run them.
+All files are idempotent (they use `if not exists` / `on conflict do update` / `create or replace`), so you can safely re-run them.
 
 ### 3. Set up Cloudinary (image hosting)
 
@@ -208,6 +209,7 @@ lib/
 supabase/migrations/
   0001_schema.sql                         # Tables, RLS, triggers, seed data, awards catalogue
   0002_features.sql                       # Loremaster reading-track + season admin RPC
+  0003_fix_award_evaluation_timing.sql    # AFTER-trigger pass so first-approval badges fire
 middleware.ts                             # Session refresh on every request
 ```
 
