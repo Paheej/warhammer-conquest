@@ -16,6 +16,38 @@ interface Props {
   factions: MapFaction[];
 }
 
+// Hand-placed stars in the 160x100 viewBox shared by the background SVG.
+// Distribution skirts the rift band so the rift reads cleanly.
+const STARS: { x: number; y: number; r: number; c: string; o: number }[] = [
+  // Upper field
+  { x: 8,   y: 10, r: 0.18, c: '#eadca5', o: 0.7  },
+  { x: 24,  y: 14, r: 0.30, c: '#ffffff', o: 0.85 },
+  { x: 42,  y: 6,  r: 0.20, c: '#eadca5', o: 0.65 },
+  { x: 58,  y: 20, r: 0.25, c: '#ffffff', o: 0.8  },
+  { x: 72,  y: 8,  r: 0.18, c: '#b8933f', o: 0.6  },
+  { x: 88,  y: 18, r: 0.30, c: '#ffffff', o: 0.9  },
+  { x: 104, y: 12, r: 0.22, c: '#eadca5', o: 0.7  },
+  { x: 122, y: 22, r: 0.18, c: '#ffffff', o: 0.65 },
+  { x: 138, y: 9,  r: 0.28, c: '#eadca5', o: 0.85 },
+  { x: 152, y: 20, r: 0.20, c: '#b8933f', o: 0.6  },
+  { x: 16,  y: 28, r: 0.22, c: '#ffffff', o: 0.7  },
+  { x: 96,  y: 30, r: 0.18, c: '#eadca5', o: 0.6  },
+  // Lower field
+  { x: 12,  y: 78, r: 0.25, c: '#eadca5', o: 0.8  },
+  { x: 30,  y: 88, r: 0.18, c: '#ffffff', o: 0.65 },
+  { x: 48,  y: 76, r: 0.30, c: '#ffffff', o: 0.85 },
+  { x: 64,  y: 92, r: 0.20, c: '#b8933f', o: 0.6  },
+  { x: 78,  y: 80, r: 0.28, c: '#eadca5', o: 0.8  },
+  { x: 94,  y: 90, r: 0.18, c: '#ffffff', o: 0.65 },
+  { x: 110, y: 78, r: 0.22, c: '#eadca5', o: 0.7  },
+  { x: 126, y: 86, r: 0.30, c: '#ffffff', o: 0.85 },
+  { x: 144, y: 78, r: 0.20, c: '#eadca5', o: 0.65 },
+  { x: 22,  y: 72, r: 0.18, c: '#ffffff', o: 0.55 },
+  { x: 60,  y: 70, r: 0.22, c: '#eadca5', o: 0.65 },
+  { x: 116, y: 72, r: 0.18, c: '#b8933f', o: 0.55 },
+  { x: 154, y: 92, r: 0.25, c: '#ffffff', o: 0.75 },
+];
+
 export default function OrbitalMap({ planets, points, factions }: Props) {
   // Two-state model: a hover overrides whatever is pinned, so moving the
   // cursor to a new world swaps the panel immediately. A click pins the
@@ -65,33 +97,70 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
         onClick={() => setPinned(null)}
         className="relative w-full overflow-hidden rounded border border-brass/30 bg-[#0b0a14] lg:flex-[2]"
       >
-        {/* Starfield background */}
-        <div
+        {/* Starfield + Great Rift background */}
+        <svg
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-60"
-          style={{
-            backgroundImage: `
-              radial-gradient(1px 1px at 20% 30%, #eadca5 50%, transparent 51%),
-              radial-gradient(1px 1px at 70% 60%, #eadca5 50%, transparent 51%),
-              radial-gradient(1px 1px at 40% 80%, #b8933f 50%, transparent 51%),
-              radial-gradient(1.5px 1.5px at 85% 25%, #ffffff 50%, transparent 51%),
-              radial-gradient(1px 1px at 10% 70%, #eadca5 50%, transparent 51%),
-              radial-gradient(1px 1px at 55% 15%, #ffffff 50%, transparent 51%)
-            `,
-          }}
-        />
+          viewBox="0 0 160 100"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+        >
+          <defs>
+            <radialGradient id="riftHalo" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stopColor="#ff5c8a" stopOpacity="0.28" />
+              <stop offset="35%"  stopColor="#a14dff" stopOpacity="0.16" />
+              <stop offset="100%" stopColor="#5a2bb0" stopOpacity="0"    />
+            </radialGradient>
+            <linearGradient id="riftCore" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stopColor="#ff79c6" stopOpacity="0"    />
+              <stop offset="20%"  stopColor="#ff79c6" stopOpacity="0.28" />
+              <stop offset="50%"  stopColor="#bd5cff" stopOpacity="0.35" />
+              <stop offset="80%"  stopColor="#ff4d6d" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="#ff4d6d" stopOpacity="0"    />
+            </linearGradient>
+            <filter id="riftBlur" x="-20%" y="-50%" width="140%" height="200%">
+              <feGaussianBlur stdDeviation="1.6" />
+            </filter>
+          </defs>
+
+          {/* Great Rift — rotated slightly off horizontal */}
+          <g transform="rotate(-10 80 50)">
+            {/* Nebular halo enveloping the rift */}
+            <ellipse cx="80" cy="52" rx="90" ry="20" fill="url(#riftHalo)" />
+            {/* Jagged warp-tear core */}
+            <g filter="url(#riftBlur)" opacity="0.85">
+              <path
+                d="M -10 53 L 12 48 L 22 54 L 34 47 L 46 53 L 58 46 L 72 52 L 86 45 L 100 51 L 114 44 L 128 50 L 142 43 L 156 49 L 170 51 L 170 57 L 146 61 L 132 55 L 118 61 L 104 55 L 90 61 L 76 55 L 62 61 L 48 55 L 34 61 L 22 56 L 10 61 L -10 59 Z"
+                fill="url(#riftCore)"
+              />
+            </g>
+          </g>
+
+          {/* Starfield */}
+          <g>
+            {STARS.map((s, i) => (
+              <circle key={i} cx={s.x} cy={s.y} r={s.r} fill={s.c} opacity={s.o} />
+            ))}
+          </g>
+        </svg>
         {/* Keep a fixed aspect ratio so planet coordinates stay stable */}
         <div className="relative" style={{ aspectRatio: '16 / 10' }}>
           {planets.map((p) => {
             const x = (p.position_x ?? 0.5) * 100;
             const y = (p.position_y ?? 0.5) * 100;
             const ptsRows = pointsByPlanet.get(p.id) ?? [];
-            const total = ptsRows.reduce((a, b) => a + b.points, 0);
             const controllingColor = p.controlling_faction_id
               ? factionById.get(p.controlling_faction_id)?.color ?? null
               : null;
             const isActive = activeId === p.id;
             const isPinned = pinned === p.id;
+
+            // Halo — leader's progress vs threshold, drawn as a single arc.
+            const threshold = Math.max(1, p.claim_threshold);
+            const leaderRow = ptsRows[0];
+            const leaderFrac = leaderRow ? Math.min(leaderRow.points / threshold, 1) : 0;
+            const leaderColor = leaderRow ? factionById.get(leaderRow.faction_id)?.color ?? '#7a5b20' : null;
+            const R_OUTER = 46;
+            const C_OUTER = 2 * Math.PI * R_OUTER;
 
             return (
               <button
@@ -107,43 +176,67 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
                 aria-label={p.name}
                 aria-pressed={isPinned}
               >
-                {/* Control ring */}
+                {/* Halo wrapper — only slightly larger than the planet body so
+                    the ring hugs the planet. Body centered inside. */}
                 <div
-                  className={`absolute inset-0 rounded-full transition-transform ${isActive ? 'scale-125' : 'scale-110'}`}
-                  style={{
-                    boxShadow: controllingColor
-                      ? `0 0 0 2px ${controllingColor}, 0 0 24px ${controllingColor}66`
-                      : '0 0 0 1px rgba(234,220,165,0.3)',
-                  }}
-                />
-                {/* Planet body */}
-                <div
-                  className={`relative h-10 w-10 overflow-hidden rounded-full border border-brass/60 transition-transform sm:h-12 sm:w-12 ${
+                  className={`relative h-12 w-12 transition-transform sm:h-14 sm:w-14 ${
                     isActive ? 'scale-110' : ''
                   }`}
-                  style={{
-                    backgroundColor: controllingColor ?? '#2b2840',
-                  }}
                 >
-                  {p.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={p.image_url}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  {/* Outer glow for controlled planets */}
+                  {controllingColor && (
+                    <div
+                      aria-hidden
+                      className="absolute inset-1 rounded-full"
+                      style={{ boxShadow: `0 0 24px ${controllingColor}66` }}
                     />
-                  ) : null}
+                  )}
+                  {/* Leader-progress halo + threshold tick at 12 o'clock */}
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 100 100"
+                    className="pointer-events-none absolute inset-0 h-full w-full"
+                    style={{ overflow: 'visible' }}
+                  >
+                    <circle cx="50" cy="50" r={R_OUTER} fill="none" stroke="rgba(234,220,165,0.2)" strokeWidth="4" />
+                    {leaderRow && leaderColor && leaderFrac > 0 && (
+                      <circle
+                        cx="50" cy="50" r={R_OUTER}
+                        fill="none"
+                        stroke={leaderColor}
+                        strokeWidth="4"
+                        strokeDasharray={`${leaderFrac * C_OUTER} ${C_OUTER}`}
+                        strokeLinecap="butt"
+                        transform="rotate(-90 50 50)"
+                      />
+                    )}
+                    {/* Threshold tick at 12 o'clock — the finish line */}
+                    <line
+                      x1="50" y1={50 - R_OUTER - 5}
+                      x2="50" y2={50 - R_OUTER + 5}
+                      stroke="#eadca5" strokeOpacity="0.95" strokeWidth="2"
+                    />
+                  </svg>
+                  {/* Planet body, centered inside the wrapper */}
+                  <div
+                    className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border border-brass/60 sm:h-12 sm:w-12"
+                    style={{ backgroundColor: controllingColor ?? '#2b2840' }}
+                  >
+                    {p.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.image_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : null}
+                  </div>
                 </div>
                 {/* Label */}
-                <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap font-display text-[10px] text-brass-bright sm:text-xs">
+                <div className="absolute left-1/2 top-full -translate-x-1/2 whitespace-nowrap font-display text-[10px] text-brass-bright sm:text-xs">
                   {p.name}
                 </div>
-                {total > 0 && (
-                  <div className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap rounded bg-ink/80 px-1 text-[9px] text-parchment sm:text-[10px]">
-                    {total}/{p.claim_threshold}
-                  </div>
-                )}
               </button>
             );
           })}
