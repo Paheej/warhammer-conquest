@@ -76,6 +76,7 @@ The schema is split into SQL files because PostgreSQL forbids referencing a newl
 2. Open `supabase/migrations/0001_schema.sql` from this repo, paste the entire contents into the editor, and click **Run**. You should see "Success. No rows returned." This creates every table, view, trigger, RLS policy, storage bucket, the awards catalogue, the five seeded game systems, and seed factions/planets.
 3. Open a fresh **New query**, paste the contents of `supabase/migrations/0002_features.sql`, and **Run**. This adds the loremaster reading-track features and Season Administration RPC.
 4. Open a fresh **New query**, paste the contents of `supabase/migrations/0003_fix_award_evaluation_timing.sql`, and **Run**. This fixes an off-by-one in award evaluation so threshold-based badges (First Blood, Brush Initiate, etc.) fire on the first qualifying approval rather than the second.
+5. Open a fresh **New query**, paste the contents of `supabase/migrations/0004_vlw_on_profile_insert.sql`, and **Run**. This grants Veteran of the Long War at account-creation time (instead of waiting for a first approval) and backfills the badge for the first 10 existing profiles.
 
 All files are idempotent (they use `if not exists` / `on conflict do update` / `create or replace`), so you can safely re-run them.
 

@@ -94,12 +94,13 @@ export const POINT_PRESETS: Record<SubmissionType, { label: string; value: numbe
     { label: "Victory (grand, 2000pts+)", value: 15 },
   ],
   model: [
-    { label: "Character / Single Infantry Model", value: 2 },
+    { label: "Character", value: 4 },
     { label: "Fireteam (3-5 models)", value: 5 },
     { label: "Squad (6-10 models)", value: 10 },
     { label: "Horde (11+ models)", value: 20 },
     { label: "Vehicle / monster", value: 8 },
     { label: "Titanic", value: 25 },
+    { label: "Painted Terrain", value: 4 },
   ],
   scribe: [
     { label: "Short vignette (<500 words)", value: 3 },
