@@ -112,9 +112,9 @@ function SimpleSubmitForm({
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [points, setPoints] = useState<number>(
-    kind === 'painted' ? POINT_PRESETS.model[0].value : POINT_PRESETS.scribe[0].value,
-  );
+  const initialPreset = kind === 'painted' ? POINT_PRESETS.model[0] : POINT_PRESETS.scribe[0];
+  const [points, setPoints] = useState<number>(initialPreset.value);
+  const [presetLabel, setPresetLabel] = useState<string>(initialPreset.label);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -258,11 +258,11 @@ function SimpleSubmitForm({
           <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
             {POINT_PRESETS.model.map((opt) => (
               <button
-                key={opt.value}
+                key={opt.label}
                 type="button"
-                onClick={() => setPoints(opt.value)}
+                onClick={() => { setPoints(opt.value); setPresetLabel(opt.label); }}
                 className={`flex flex-col items-center rounded border px-3 py-2 text-center text-sm transition-colors hover:border-brass/50 ${
-                  points === opt.value
+                  presetLabel === opt.label
                     ? 'border-brass bg-brass/10 text-parchment'
                     : 'border-brass/20 text-parchment-dim'
                 }`}
@@ -282,11 +282,11 @@ function SimpleSubmitForm({
           <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-3">
             {POINT_PRESETS.scribe.map((opt) => (
               <button
-                key={opt.value}
+                key={opt.label}
                 type="button"
-                onClick={() => setPoints(opt.value)}
+                onClick={() => { setPoints(opt.value); setPresetLabel(opt.label); }}
                 className={`flex flex-col items-center rounded border px-3 py-2 text-center text-sm transition-colors hover:border-brass/50 ${
-                  points === opt.value
+                  presetLabel === opt.label
                     ? 'border-brass bg-brass/10 text-parchment'
                     : 'border-brass/20 text-parchment-dim'
                 }`}

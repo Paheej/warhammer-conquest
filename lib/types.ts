@@ -94,7 +94,7 @@ export const POINT_PRESETS: Record<SubmissionType, { label: string; value: numbe
     { label: "Victory (grand, 2000pts+)", value: 15 },
   ],
   model: [
-    { label: "Character / Single Infantry Model", value: 4 },
+    { label: "Character", value: 4 },
     { label: "Fireteam (3-5 models)", value: 5 },
     { label: "Squad (6-10 models)", value: 10 },
     { label: "Horde (11+ models)", value: 20 },
