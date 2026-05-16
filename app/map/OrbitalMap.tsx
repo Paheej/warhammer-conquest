@@ -8,6 +8,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import FactionEmblem from '@/components/FactionEmblem';
 import type { MapFaction, MapPlanet, MapPoint } from './page';
 
 interface Props {
@@ -148,9 +149,10 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
             const x = (p.position_x ?? 0.5) * 100;
             const y = (p.position_y ?? 0.5) * 100;
             const ptsRows = pointsByPlanet.get(p.id) ?? [];
-            const controllingColor = p.controlling_faction_id
-              ? factionById.get(p.controlling_faction_id)?.color ?? null
+            const controllingFaction = p.controlling_faction_id
+              ? factionById.get(p.controlling_faction_id) ?? null
               : null;
+            const controllingColor = controllingFaction?.color ?? null;
             const isActive = activeId === p.id;
             const isPinned = pinned === p.id;
 
@@ -232,6 +234,17 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
                       />
                     ) : null}
                   </div>
+                  {/* Controlling-faction emblem badge — bottom-right corner */}
+                  {controllingFaction?.emblem_url && controllingFaction.color && (
+                    <div className="absolute -bottom-0.5 -right-0.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-brass/60 bg-ink-2 shadow sm:h-6 sm:w-6">
+                      <FactionEmblem
+                        url={controllingFaction.emblem_url}
+                        color={controllingFaction.color}
+                        size={12}
+                        title={controllingFaction.name}
+                      />
+                    </div>
+                  )}
                 </div>
                 {/* Label */}
                 <div className="absolute left-1/2 top-full -translate-x-1/2 whitespace-nowrap font-display text-[10px] text-brass-bright sm:text-xs">
@@ -260,7 +273,19 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
                   Threshold {hoveredPlanet.claim_threshold}
                   {hoveredPlanet.controlling_faction_id && (() => {
                     const f = factionById.get(hoveredPlanet.controlling_faction_id!);
-                    return f ? <> · controlled by <span style={{ color: f.color ?? undefined }}>{f.name}</span></> : null;
+                    if (!f) return null;
+                    const fColor = f.color ?? '#7a5b20';
+                    return (
+                      <>
+                        {' · controlled by '}
+                        <span className="inline-flex items-center gap-1 align-middle">
+                          {f.emblem_url && (
+                            <FactionEmblem url={f.emblem_url} color={fColor} size={12} />
+                          )}
+                          <span style={{ color: fColor }}>{f.name}</span>
+                        </span>
+                      </>
+                    );
                   })()}
                 </p>
               </div>
@@ -283,14 +308,19 @@ export default function OrbitalMap({ planets, points, factions }: Props) {
                   const f = factionById.get(row.faction_id);
                   if (!f) return null;
                   const pct = Math.min(100, (row.points / hoveredPlanet.claim_threshold) * 100);
+                  const fColor = f.color ?? '#7a5b20';
                   return (
                     <li key={row.faction_id} className="text-sm">
                       <div className="flex items-center justify-between text-parchment">
                         <span className="inline-flex items-center gap-2">
-                          <span
-                            className="inline-block h-2.5 w-2.5 rounded-full"
-                            style={{ backgroundColor: f.color ?? '#7a5b20' }}
-                          />
+                          {f.emblem_url ? (
+                            <FactionEmblem url={f.emblem_url} color={fColor} size={14} />
+                          ) : (
+                            <span
+                              className="inline-block h-2.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: fColor }}
+                            />
+                          )}
                           {f.name}
                         </span>
                         <span className="text-parchment-dim">

@@ -60,6 +60,7 @@ export type FactionTotal = {
   faction_id: string;
   faction_name: string;
   color: string;
+  emblem_url: string | null;
   total_points: number;
   wins: number;
   models_painted: number;
@@ -74,6 +75,7 @@ export type PlayerTotal = {
   faction_id: string | null;
   faction_name: string | null;
   faction_color: string | null;
+  faction_emblem_url: string | null;
   total_points: number;
   approved_count: number;
 };
@@ -221,6 +223,7 @@ export interface ActivityFeedItem {
   faction_id: string | null;
   faction_name: string | null;
   faction_color: string | null;
+  faction_emblem_url: string | null;
   planet_id: string | null;
   planet_name: string | null;
   game_system_id: GameSystemId | null;
