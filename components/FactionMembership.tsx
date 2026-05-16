@@ -8,8 +8,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import FactionEmblem from '@/components/FactionEmblem';
 
-interface Faction { id: string; name: string; color?: string | null; }
+interface Faction { id: string; name: string; color?: string | null; emblem_url?: string | null; }
 
 interface Props {
   userId: string;
@@ -27,7 +28,7 @@ export default function FactionMembership({ userId }: Props) {
   async function refresh() {
     setLoading(true);
     const [all, mine] = await Promise.all([
-      supabase.from('factions').select('id, name, color').order('name'),
+      supabase.from('factions').select('id, name, color, emblem_url').order('name'),
       supabase.from('player_factions').select('faction_id, is_primary').eq('user_id', userId),
     ]);
     setAllFactions((all.data ?? []) as Faction[]);
@@ -141,11 +142,15 @@ export default function FactionMembership({ userId }: Props) {
             key={row.faction_id}
             className="flex flex-wrap items-center gap-2 rounded border border-brass/30 bg-ink/60 px-3 py-2"
           >
-            <span
-              className="inline-block h-3 w-3 rounded-full"
-              style={{ backgroundColor: row.faction?.color ?? '#7a5b20' }}
-              aria-hidden
-            />
+            {row.faction?.emblem_url && row.faction.color ? (
+              <FactionEmblem url={row.faction.emblem_url} color={row.faction.color} size={16} />
+            ) : (
+              <span
+                className="inline-block h-3 w-3 rounded-full"
+                style={{ backgroundColor: row.faction?.color ?? '#7a5b20' }}
+                aria-hidden
+              />
+            )}
             <span className="font-display text-parchment">{row.faction?.name}</span>
             {row.is_primary && (
               <span className="rounded border border-brass/60 bg-brass/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brass-bright">

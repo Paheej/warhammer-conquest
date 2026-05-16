@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server';
 import KindBadge from '@/components/KindBadge';
 import AwardCard from '@/components/AwardCard';
 import HonoursStrip, { type FeaturedAward } from '@/components/HonoursStrip';
+import FactionEmblem from '@/components/FactionEmblem';
 import {
   AWARD_CATEGORY_LABELS,
   type ActivityFeedItem,
@@ -38,7 +39,7 @@ interface ProfileRow {
 interface FactionMembership {
   faction_id: string;
   is_primary: boolean;
-  factions: { id: string; name: string; color: string | null } | null;
+  factions: { id: string; name: string; color: string | null; emblem_url: string | null } | null;
 }
 
 interface EloRow {
@@ -49,7 +50,7 @@ interface EloRow {
   wins: number;
   losses: number;
   draws: number;
-  factions: { name: string; color: string | null } | null;
+  factions: { name: string; color: string | null; emblem_url: string | null } | null;
   game_systems: { name: string; short_name: string } | null;
 }
 
@@ -69,11 +70,11 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   const [memberships, elo, activity, statsRes, honoursRes] = await Promise.all([
     supabase
       .from('player_factions')
-      .select('faction_id, is_primary, factions(id, name, color)')
+      .select('faction_id, is_primary, factions(id, name, color, emblem_url)')
       .eq('user_id', id),
     supabase
       .from('elo_ratings')
-      .select('game_system_id, faction_id, rating, games_played, wins, losses, draws, factions(name, color), game_systems(name, short_name)')
+      .select('game_system_id, faction_id, rating, games_played, wins, losses, draws, factions(name, color, emblem_url), game_systems(name, short_name)')
       .eq('user_id', id)
       .order('rating', { ascending: false }),
     supabase
@@ -167,11 +168,15 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           </h1>
           {primary && (
             <div className="mt-1 inline-flex items-center gap-2 text-sm text-parchment-dim">
-              <span
-                className="inline-block h-3 w-3 rounded-full"
-                style={{ backgroundColor: primary.color ?? '#7a5b20' }}
-                aria-hidden
-              />
+              {primary.emblem_url && primary.color ? (
+                <FactionEmblem url={primary.emblem_url} color={primary.color} size={16} />
+              ) : (
+                <span
+                  className="inline-block h-3 w-3 rounded-full"
+                  style={{ backgroundColor: primary.color ?? '#7a5b20' }}
+                  aria-hidden
+                />
+              )}
               Champion of <strong className="text-parchment">{primary.name}</strong>
             </div>
           )}
@@ -202,11 +207,15 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                 key={m.faction_id}
                 className="inline-flex items-center gap-2 rounded border border-brass/30 bg-ink px-3 py-1.5 text-sm"
               >
-                <span
-                  className="inline-block h-3 w-3 rounded-full"
-                  style={{ backgroundColor: m.factions.color ?? '#7a5b20' }}
-                  aria-hidden
-                />
+                {m.factions.emblem_url && m.factions.color ? (
+                  <FactionEmblem url={m.factions.emblem_url} color={m.factions.color} size={16} />
+                ) : (
+                  <span
+                    className="inline-block h-3 w-3 rounded-full"
+                    style={{ backgroundColor: m.factions.color ?? '#7a5b20' }}
+                    aria-hidden
+                  />
+                )}
                 <span className="text-parchment">{m.factions.name}</span>
                 {m.is_primary && (
                   <span className="rounded border border-brass bg-brass/10 px-1.5 text-[10px] font-bold uppercase tracking-wider text-parchment">
@@ -247,10 +256,14 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                     <td className="px-3 py-2">{r.game_systems?.short_name ?? r.game_system_id}</td>
                     <td className="px-3 py-2">
                       <span className="inline-flex items-center gap-2">
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: r.factions?.color ?? '#7a5b20' }}
-                        />
+                        {r.factions?.emblem_url && r.factions.color ? (
+                          <FactionEmblem url={r.factions.emblem_url} color={r.factions.color} size={14} />
+                        ) : (
+                          <span
+                            className="inline-block h-2.5 w-2.5 rounded-full"
+                            style={{ backgroundColor: r.factions?.color ?? '#7a5b20' }}
+                          />
+                        )}
                         {r.factions?.name ?? r.faction_id}
                       </span>
                     </td>

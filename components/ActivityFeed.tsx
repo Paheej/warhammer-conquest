@@ -7,6 +7,8 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import KindBadge from '@/components/KindBadge';
+import FactionEmblem from '@/components/FactionEmblem';
+import { readableTextColor } from '@/lib/contrast';
 import type { ActivityFeedItem } from '@/lib/types';
 
 function timeAgo(iso: string): string {
@@ -112,14 +114,21 @@ export default async function ActivityFeed({ limit = 15 }: { limit?: number }) {
               >
                 {it.display_name}
               </Link>
-              {it.faction_name && (
-                <span
-                  className="rounded px-1.5 py-0.5 text-xs font-medium text-parchment"
-                  style={{ backgroundColor: it.faction_color ?? '#7a5b20' }}
-                >
-                  {it.faction_name}
-                </span>
-              )}
+              {it.faction_name && (() => {
+                const bg = it.faction_color ?? '#7a5b20';
+                const fg = readableTextColor(bg);
+                return (
+                  <span
+                    className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium"
+                    style={{ backgroundColor: bg, color: fg }}
+                  >
+                    {it.faction_emblem_url && (
+                      <FactionEmblem url={it.faction_emblem_url} color={fg} size={12} />
+                    )}
+                    {it.faction_name}
+                  </span>
+                );
+              })()}
               <KindBadge kind={it.kind} />
               {it.result && <ResultBadge result={it.result} />}
               {it.game_system_short && (

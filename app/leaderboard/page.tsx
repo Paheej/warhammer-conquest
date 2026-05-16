@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import HonoursBadgeRow, { type HonourBadge } from "@/components/HonoursBadgeRow";
+import FactionEmblem from "@/components/FactionEmblem";
 import type { AwardTier, FactionTotal, PlayerTotal } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -144,9 +145,12 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                         className="flex items-center gap-3 text-parchment transition-colors hover:text-brass-bright"
                       >
                         <span
-                          className="inline-block w-1 h-8"
+                          className="inline-block w-1 h-8 shrink-0"
                           style={{ backgroundColor: f.color }}
                         />
+                        {f.emblem_url && (
+                          <FactionEmblem url={f.emblem_url} color={f.color} size={20} />
+                        )}
                         <span className="font-display">{f.faction_name}</span>
                       </Link>
                     </td>
@@ -171,10 +175,14 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
           </h2>
           {activeFaction && (
             <span className="inline-flex items-center gap-2 rounded-full border border-brass/40 bg-brass/10 px-3 py-0.5 text-xs">
-              <span
-                className="inline-block h-2 w-2 rounded-full"
-                style={{ backgroundColor: activeFaction.color }}
-              />
+              {activeFaction.emblem_url ? (
+                <FactionEmblem url={activeFaction.emblem_url} color={activeFaction.color} size={14} />
+              ) : (
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: activeFaction.color }}
+                />
+              )}
               <span className="text-parchment">
                 Aligned to <span className="font-display">{activeFaction.faction_name}</span>
               </span>
@@ -225,8 +233,13 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                           <HonoursBadgeRow badges={honours} />
                         </div>
                       </td>
-                      <td className="p-3 hidden sm:table-cell" style={{ color: p.faction_color ?? "#b8a888" }}>
-                        {p.faction_name ?? "—"}
+                      <td className="p-3 hidden sm:table-cell">
+                        <span className="inline-flex items-center gap-2" style={{ color: p.faction_color ?? "#b8a888" }}>
+                          {p.faction_emblem_url && p.faction_color && (
+                            <FactionEmblem url={p.faction_emblem_url} color={p.faction_color} size={14} />
+                          )}
+                          {p.faction_name ?? "—"}
+                        </span>
                       </td>
                       <td className="p-3 text-right font-body hidden sm:table-cell">{p.approved_count}</td>
                       <td className="p-3 text-right font-display text-brass-bright">{p.total_points}</td>
