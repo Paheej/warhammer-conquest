@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import FactionEmblem from "@/components/FactionEmblem";
 import type { Faction } from "@/lib/types";
 
 export function AdminFactions({ factions }: { factions: Faction[] }) {
@@ -138,7 +139,13 @@ export function AdminFactions({ factions }: { factions: Faction[] }) {
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-sm shrink-0" style={{ backgroundColor: f.color }} />
+                  <div className="w-8 h-8 rounded-sm shrink-0 flex items-center justify-center bg-ink-2 border border-brass/40" style={{ borderColor: f.color }}>
+                    {f.emblem_url ? (
+                      <FactionEmblem url={f.emblem_url} color={f.color} size={20} />
+                    ) : (
+                      <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: f.color }} />
+                    )}
+                  </div>
                   <div className="flex-1 font-display text-parchment">{f.name}</div>
                   <button
                     onClick={() => startEdit(f)}

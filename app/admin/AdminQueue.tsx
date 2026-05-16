@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import FactionEmblem from "@/components/FactionEmblem";
 import type { Submission, Planet, Faction } from "@/lib/types";
 
 type Row = Submission & { profiles: { display_name: string } | null };
@@ -106,7 +107,17 @@ export function AdminQueue({
                 <h3 className="font-display text-xl text-parchment">{s.title}</h3>
                 <div className="mt-1 text-sm text-parchment-dim font-body">
                   by <span className="text-parchment">{s.profiles?.display_name ?? "Unknown"}</span>
-                  {faction && <> · <span style={{ color: faction.color }}>{faction.name}</span></>}
+                  {faction && (
+                    <>
+                      {' · '}
+                      <span className="inline-flex items-center gap-1 align-middle">
+                        {faction.emblem_url && (
+                          <FactionEmblem url={faction.emblem_url} color={faction.color} size={12} />
+                        )}
+                        <span style={{ color: faction.color }}>{faction.name}</span>
+                      </span>
+                    </>
+                  )}
                   {planet && <> · targeting <span className="text-brass">{planet.name}</span></>}
                   {s.opponent_name && <> · vs {s.opponent_name}</>}
                 </div>

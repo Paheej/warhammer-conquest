@@ -17,6 +17,7 @@ import KindBadge from '@/components/KindBadge';
 import AwardCard from '@/components/AwardCard';
 import AwardToaster from '@/components/AwardToaster';
 import HonoursStrip, { type FeaturedAward } from '@/components/HonoursStrip';
+import FactionEmblem from '@/components/FactionEmblem';
 import { DashboardProfile } from './DashboardProfile';
 import type { Award, AwardCategory, PlayerAward, Profile } from '@/lib/types';
 import { AWARD_CATEGORY_LABELS } from '@/lib/types';
@@ -31,7 +32,7 @@ interface EloRow {
   wins: number;
   losses: number;
   draws: number;
-  factions: { name: string; color: string | null } | null;
+  factions: { name: string; color: string | null; emblem_url: string | null } | null;
   game_systems: { short_name: string; name: string } | null;
 }
 
@@ -79,7 +80,7 @@ export default async function DashboardPage() {
       .maybeSingle(),
     supabase
       .from('elo_ratings')
-      .select('game_system_id, faction_id, rating, games_played, wins, losses, draws, factions(name, color), game_systems(short_name, name)')
+      .select('game_system_id, faction_id, rating, games_played, wins, losses, draws, factions(name, color, emblem_url), game_systems(short_name, name)')
       .eq('user_id', user.id)
       .order('rating', { ascending: false }),
     supabase
@@ -223,10 +224,14 @@ export default async function DashboardPage() {
                     <td className="p-2 text-parchment">{r.game_systems?.short_name ?? r.game_system_id}</td>
                     <td className="p-2">
                       <span className="inline-flex items-center gap-2 text-parchment">
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: r.factions?.color ?? '#7a5b20' }}
-                        />
+                        {r.factions?.emblem_url && r.factions.color ? (
+                          <FactionEmblem url={r.factions.emblem_url} color={r.factions.color} size={14} />
+                        ) : (
+                          <span
+                            className="inline-block h-2.5 w-2.5 rounded-full"
+                            style={{ backgroundColor: r.factions?.color ?? '#7a5b20' }}
+                          />
+                        )}
                         {r.factions?.name ?? r.faction_id}
                       </span>
                     </td>
