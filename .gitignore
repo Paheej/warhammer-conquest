@@ -14,3 +14,4 @@ package-lock.json
 # Local working notes / scratch
 recap.md
 supabase/tmp_schema_dump_*.csv
+supabase/.temp/
