@@ -21,9 +21,11 @@ export function AdminQueue({
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [adjustments, setAdjustments] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [factionOverrides, setFactionOverrides] = useState<Record<string, string | null>>({});
 
   const planetById = new Map(planets.map((p) => [p.id, p]));
   const factionById = new Map(factions.map((f) => [f.id, f]));
+  const sortedFactions = [...factions].sort((a, b) => a.name.localeCompare(b.name));
 
   async function review(id: string, status: "approved" | "rejected") {
     setWorkingId(id);
@@ -32,6 +34,9 @@ export function AdminQueue({
     const { data: { user } } = await supabase.auth.getUser();
     const finalPoints = adjustments[id];
     const reviewNote = notes[id] || null;
+    const submission = submissions.find((s) => s.id === id);
+    const hasFactionOverride = Object.prototype.hasOwnProperty.call(factionOverrides, id);
+    const overrideFaction = hasFactionOverride ? factionOverrides[id] : undefined;
 
     const update: Record<string, unknown> = {
       status,
@@ -41,6 +46,9 @@ export function AdminQueue({
     };
     if (status === "approved" && typeof finalPoints === "number") {
       update.points = finalPoints;
+    }
+    if (hasFactionOverride && overrideFaction !== (submission?.faction_id ?? null)) {
+      update.faction_id = overrideFaction;
     }
 
     const { error } = await supabase
@@ -68,7 +76,10 @@ export function AdminQueue({
     <div className="space-y-4">
       {submissions.map((s) => {
         const planet = s.target_planet_id ? planetById.get(s.target_planet_id) : null;
-        const faction = s.faction_id ? factionById.get(s.faction_id) : null;
+        const hasFactionOverride = Object.prototype.hasOwnProperty.call(factionOverrides, s.id);
+        const selectedFactionId = hasFactionOverride ? factionOverrides[s.id] : s.faction_id;
+        const faction = selectedFactionId ? factionById.get(selectedFactionId) : null;
+        const factionChanged = hasFactionOverride && selectedFactionId !== s.faction_id;
         const adjusted = adjustments[s.id] ?? s.points;
 
         return (
@@ -143,7 +154,7 @@ export function AdminQueue({
               />
             )}
 
-            <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-brass/10">
+            <div className="grid md:grid-cols-3 gap-4 pt-4 border-t border-brass/10">
               <div>
                 <label className="label">Adjust Points</label>
                 <input
@@ -158,6 +169,35 @@ export function AdminQueue({
                   }
                   className="input w-full"
                 />
+              </div>
+              <div>
+                <label className="label">
+                  Faction
+                  {factionChanged && (
+                    <span className="ml-2 text-xs text-crusade normal-case tracking-normal">
+                      changed
+                    </span>
+                  )}
+                </label>
+                <select
+                  value={selectedFactionId ?? ""}
+                  onChange={(e) =>
+                    setFactionOverrides((f) => ({
+                      ...f,
+                      [s.id]: e.target.value === "" ? null : e.target.value,
+                    }))
+                  }
+                  className="input w-full"
+                >
+                  <option value="" className="bg-ink text-parchment">
+                    (no faction)
+                  </option>
+                  {sortedFactions.map((f) => (
+                    <option key={f.id} value={f.id} className="bg-ink text-parchment">
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="label">Review Notes (optional)</label>
