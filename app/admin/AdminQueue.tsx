@@ -4,9 +4,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import FactionEmblem from "@/components/FactionEmblem";
-import type { Submission, Planet, Faction } from "@/lib/types";
+import type { Submission, SubmissionType, Planet, Faction } from "@/lib/types";
 
 type Row = Submission & { profiles: { display_name: string } | null };
+
+const SUBMISSION_TYPE_OPTIONS: { value: SubmissionType; label: string }[] = [
+  { value: "game", label: "Battle Report" },
+  { value: "model", label: "Painted Unit" },
+  { value: "scribe", label: "Scribe" },
+  { value: "loremaster", label: "Loremaster" },
+  { value: "bonus", label: "Bonus" },
+];
 
 export function AdminQueue({
   submissions,
@@ -21,9 +29,12 @@ export function AdminQueue({
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [adjustments, setAdjustments] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [factionOverrides, setFactionOverrides] = useState<Record<string, string | null>>({});
+  const [typeOverrides, setTypeOverrides] = useState<Record<string, SubmissionType>>({});
 
   const planetById = new Map(planets.map((p) => [p.id, p]));
   const factionById = new Map(factions.map((f) => [f.id, f]));
+  const sortedFactions = [...factions].sort((a, b) => a.name.localeCompare(b.name));
 
   async function review(id: string, status: "approved" | "rejected") {
     setWorkingId(id);
@@ -32,6 +43,12 @@ export function AdminQueue({
     const { data: { user } } = await supabase.auth.getUser();
     const finalPoints = adjustments[id];
     const reviewNote = notes[id] || null;
+    const submission = submissions.find((s) => s.id === id);
+    const hasFactionOverride = Object.prototype.hasOwnProperty.call(factionOverrides, id);
+    const overrideFaction = hasFactionOverride ? factionOverrides[id] : undefined;
+    const hasTypeOverride = Object.prototype.hasOwnProperty.call(typeOverrides, id);
+    const overrideType = hasTypeOverride ? typeOverrides[id] : undefined;
+    const typeChanged = hasTypeOverride && overrideType !== submission?.type;
 
     const update: Record<string, unknown> = {
       status,
@@ -41,6 +58,27 @@ export function AdminQueue({
     };
     if (status === "approved" && typeof finalPoints === "number") {
       update.points = finalPoints;
+    }
+    if (hasFactionOverride && overrideFaction !== (submission?.faction_id ?? null)) {
+      update.faction_id = overrideFaction;
+    }
+    if (typeChanged && overrideType) {
+      update.type = overrideType;
+      if (overrideType !== "game") {
+        update.result = null;
+        update.opponent_name = null;
+        update.adversary_user_id = null;
+        update.adversary_faction_id = null;
+        update.game_system_id = null;
+        update.game_size = null;
+        update.video_game_title_id = null;
+      }
+      if (overrideType !== "loremaster") {
+        update.lore_title = null;
+        update.lore_format = null;
+        update.lore_rating = null;
+        update.lore_reflection = null;
+      }
     }
 
     const { error } = await supabase
@@ -68,7 +106,13 @@ export function AdminQueue({
     <div className="space-y-4">
       {submissions.map((s) => {
         const planet = s.target_planet_id ? planetById.get(s.target_planet_id) : null;
-        const faction = s.faction_id ? factionById.get(s.faction_id) : null;
+        const hasFactionOverride = Object.prototype.hasOwnProperty.call(factionOverrides, s.id);
+        const selectedFactionId = hasFactionOverride ? factionOverrides[s.id] : s.faction_id;
+        const faction = selectedFactionId ? factionById.get(selectedFactionId) : null;
+        const factionChanged = hasFactionOverride && selectedFactionId !== s.faction_id;
+        const hasTypeOverride = Object.prototype.hasOwnProperty.call(typeOverrides, s.id);
+        const selectedType = hasTypeOverride ? typeOverrides[s.id] : s.type;
+        const typeChanged = hasTypeOverride && selectedType !== s.type;
         const adjusted = adjustments[s.id] ?? s.points;
 
         return (
@@ -77,7 +121,7 @@ export function AdminQueue({
               <div>
                 <div className="flex items-center gap-3 mb-1 flex-wrap">
                   <span className="font-display text-xs uppercase tracking-widest text-brass px-2 py-0.5 border border-brass/40">
-                    {s.type}
+                    {selectedType}
                   </span>
                   {s.type === "game" && s.result && (
                     <span
@@ -143,22 +187,84 @@ export function AdminQueue({
               />
             )}
 
-            <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-brass/10">
-              <div>
-                <label className="label">Adjust Points</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={adjusted}
-                  onChange={(e) =>
-                    setAdjustments((a) => ({
-                      ...a,
-                      [s.id]: Number(e.target.value),
-                    }))
-                  }
-                  className="input w-full"
-                />
+            <div className="pt-4 border-t border-brass/10 space-y-4">
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="label">Adjust Points</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={adjusted}
+                    onChange={(e) =>
+                      setAdjustments((a) => ({
+                        ...a,
+                        [s.id]: Number(e.target.value),
+                      }))
+                    }
+                    className="input w-full"
+                  />
+                </div>
+                <div>
+                  <label className="label">
+                    Type
+                    {typeChanged && (
+                      <span className="ml-2 text-xs text-crusade normal-case tracking-normal">
+                        changed
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    value={selectedType}
+                    onChange={(e) =>
+                      setTypeOverrides((t) => ({
+                        ...t,
+                        [s.id]: e.target.value as SubmissionType,
+                      }))
+                    }
+                    className="input w-full"
+                  >
+                    {SUBMISSION_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value} className="bg-ink text-parchment">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">
+                    Faction
+                    {factionChanged && (
+                      <span className="ml-2 text-xs text-crusade normal-case tracking-normal">
+                        changed
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    value={selectedFactionId ?? ""}
+                    onChange={(e) =>
+                      setFactionOverrides((f) => ({
+                        ...f,
+                        [s.id]: e.target.value === "" ? null : e.target.value,
+                      }))
+                    }
+                    className="input w-full"
+                  >
+                    <option value="" className="bg-ink text-parchment">
+                      (no faction)
+                    </option>
+                    {sortedFactions.map((f) => (
+                      <option key={f.id} value={f.id} className="bg-ink text-parchment">
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+              {typeChanged && (
+                <p className="text-xs italic text-parchment-dark">
+                  Type changed from <span className="text-parchment">{s.type}</span> to <span className="text-parchment">{selectedType}</span>. Any type-specific fields (battle result, lore rating, etc.) will be cleared on save.
+                </p>
+              )}
               <div>
                 <label className="label">Review Notes (optional)</label>
                 <input

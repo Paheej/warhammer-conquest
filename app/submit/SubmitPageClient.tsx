@@ -8,13 +8,24 @@
 // and Scribe (writing) share the simple form.
 // =====================================================================
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { uploadImage } from '@/lib/upload-image';
 import BattleSubmitForm from '@/components/BattleSubmitForm';
 import { POINT_PRESETS } from '@/lib/types';
 import type { GameSystemId, LoreFormat } from '@/lib/types';
+
+function countWords(s: string): number {
+  const trimmed = s.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+function scribeBracketFor(words: number) {
+  if (words >= 1500) return POINT_PRESETS.scribe[2];
+  if (words >= 500)  return POINT_PRESETS.scribe[1];
+  return POINT_PRESETS.scribe[0];
+}
 
 interface Planet  { id: string; name: string; }
 interface Faction { id: string; name: string; }
@@ -117,6 +128,15 @@ function SimpleSubmitForm({
   const [presetLabel, setPresetLabel] = useState<string>(initialPreset.label);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const scribeWordCount = kind === 'scribe' ? countWords(description) : 0;
+  const scribeBracket   = kind === 'scribe' ? scribeBracketFor(scribeWordCount) : null;
+
+  useEffect(() => {
+    if (kind !== 'scribe' || !scribeBracket) return;
+    setPoints(scribeBracket.value);
+    setPresetLabel(scribeBracket.label);
+  }, [kind, scribeBracket?.value, scribeBracket?.label]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -280,24 +300,25 @@ function SimpleSubmitForm({
         <div>
           <span className="label">Claimed points</span>
           <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            {POINT_PRESETS.scribe.map((opt) => (
-              <button
-                key={opt.label}
-                type="button"
-                onClick={() => { setPoints(opt.value); setPresetLabel(opt.label); }}
-                className={`flex flex-col items-center rounded border px-3 py-2 text-center text-sm transition-colors hover:border-brass/50 ${
-                  presetLabel === opt.label
-                    ? 'border-brass bg-brass/10 text-parchment'
-                    : 'border-brass/20 text-parchment-dim'
-                }`}
-              >
-                <span>{opt.label}</span>
-                <span className="text-xs opacity-80">{opt.value} pts</span>
-              </button>
-            ))}
+            {POINT_PRESETS.scribe.map((opt) => {
+              const active = scribeBracket?.label === opt.label;
+              return (
+                <div
+                  key={opt.label}
+                  className={`flex flex-col items-center rounded border px-3 py-2 text-center text-sm ${
+                    active
+                      ? 'border-brass bg-brass/10 text-parchment'
+                      : 'border-brass/20 text-parchment-dim'
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  <span className="text-xs opacity-80">{opt.value} pts</span>
+                </div>
+              );
+            })}
           </div>
           <p className="mt-1 text-xs italic text-parchment-dark">
-            The Inquisition may adjust this value upon review.
+            Auto-selected from your word count ({scribeWordCount.toLocaleString()} {scribeWordCount === 1 ? 'word' : 'words'}). The Inquisition may adjust upon review.
           </p>
         </div>
       )}
