@@ -54,6 +54,11 @@ export type Submission = {
   lore_format: LoreFormat | null;
   lore_rating: number | null;
   lore_reflection: string | null;
+  game_system_id: string | null;
+  game_size: GameSize | null;
+  video_game_title_id: number | null;
+  adversary_user_id: string | null;
+  adversary_faction_id: string | null;
 };
 
 export type FactionTotal = {
@@ -189,6 +194,7 @@ export interface EloRating {
   user_id: string;
   game_system_id: GameSystemId;
   faction_id: string;
+  video_game_title_id: number | null;
   rating: number;
   games_played: number;
   wins: number;

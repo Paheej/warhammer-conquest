@@ -77,6 +77,7 @@ The schema is split into SQL files because PostgreSQL forbids referencing a newl
 3. Open a fresh **New query**, paste the contents of `supabase/migrations/0002_features.sql`, and **Run**. This adds the loremaster reading-track features and Season Administration RPC.
 4. Open a fresh **New query**, paste the contents of `supabase/migrations/0003_fix_award_evaluation_timing.sql`, and **Run**. This fixes an off-by-one in award evaluation so threshold-based badges (First Blood, Brush Initiate, etc.) fire on the first qualifying approval rather than the second.
 5. Open a fresh **New query**, paste the contents of `supabase/migrations/0004_vlw_on_profile_insert.sql`, and **Run**. This grants Veteran of the Long War at account-creation time (instead of waiting for a first approval) and backfills the badge for the first 10 existing profiles.
+6. Open a fresh **New query**, paste the contents of `supabase/migrations/0015_video_game_per_title_elo.sql`, and **Run**. This splits video-game ELO ratings out by individual title (Dawn of War, Battlesector, etc.) instead of pooling every video game into one rating; the migration wipes existing `video` ELO rows and replays approved video matches in time order to rebuild per-title ratings.
 
 All files are idempotent (they use `if not exists` / `on conflict do update` / `create or replace`), so you can safely re-run them.
 

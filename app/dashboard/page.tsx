@@ -27,6 +27,7 @@ export const dynamic = 'force-dynamic';
 interface EloRow {
   game_system_id: string;
   faction_id: string;
+  video_game_title_id: number | null;
   rating: number;
   games_played: number;
   wins: number;
@@ -34,6 +35,7 @@ interface EloRow {
   draws: number;
   factions: { name: string; color: string | null; emblem_url: string | null } | null;
   game_systems: { short_name: string; name: string } | null;
+  video_game_titles: { name: string } | null;
 }
 
 interface SubRow {
@@ -80,7 +82,7 @@ export default async function DashboardPage() {
       .maybeSingle(),
     supabase
       .from('elo_ratings')
-      .select('game_system_id, faction_id, rating, games_played, wins, losses, draws, factions(name, color, emblem_url), game_systems(short_name, name)')
+      .select('game_system_id, faction_id, video_game_title_id, rating, games_played, wins, losses, draws, factions(name, color, emblem_url), game_systems(short_name, name), video_game_titles(name)')
       .eq('user_id', user.id)
       .order('rating', { ascending: false }),
     supabase
@@ -220,8 +222,12 @@ export default async function DashboardPage() {
               </thead>
               <tbody>
                 {elo.map((r) => (
-                  <tr key={`${r.game_system_id}-${r.faction_id}`} className="border-b border-brass/5">
-                    <td className="p-2 text-parchment">{r.game_systems?.short_name ?? r.game_system_id}</td>
+                  <tr key={`${r.game_system_id}-${r.faction_id}-${r.video_game_title_id ?? 'na'}`} className="border-b border-brass/5">
+                    <td className="p-2 text-parchment">
+                      {r.video_game_titles?.name
+                        ?? r.game_systems?.short_name
+                        ?? r.game_system_id}
+                    </td>
                     <td className="p-2">
                       <span className="inline-flex items-center gap-2 text-parchment">
                         {r.factions?.emblem_url && r.factions.color ? (
