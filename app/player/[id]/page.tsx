@@ -45,6 +45,7 @@ interface FactionMembership {
 interface EloRow {
   game_system_id: string;
   faction_id: string;
+  video_game_title_id: number | null;
   rating: number;
   games_played: number;
   wins: number;
@@ -52,6 +53,7 @@ interface EloRow {
   draws: number;
   factions: { name: string; color: string | null; emblem_url: string | null } | null;
   game_systems: { name: string; short_name: string } | null;
+  video_game_titles: { name: string } | null;
 }
 
 export default async function PlayerProfilePage({ params }: PageProps) {
@@ -74,7 +76,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       .eq('user_id', id),
     supabase
       .from('elo_ratings')
-      .select('game_system_id, faction_id, rating, games_played, wins, losses, draws, factions(name, color, emblem_url), game_systems(name, short_name)')
+      .select('game_system_id, faction_id, video_game_title_id, rating, games_played, wins, losses, draws, factions(name, color, emblem_url), game_systems(name, short_name), video_game_titles(name)')
       .eq('user_id', id)
       .order('rating', { ascending: false }),
     supabase
@@ -252,8 +254,12 @@ export default async function PlayerProfilePage({ params }: PageProps) {
               </thead>
               <tbody className="divide-y divide-brass/20">
                 {eloRows.map((r) => (
-                  <tr key={`${r.game_system_id}-${r.faction_id}`} className="text-parchment">
-                    <td className="px-3 py-2">{r.game_systems?.short_name ?? r.game_system_id}</td>
+                  <tr key={`${r.game_system_id}-${r.faction_id}-${r.video_game_title_id ?? 'na'}`} className="text-parchment">
+                    <td className="px-3 py-2">
+                      {r.video_game_titles?.name
+                        ?? r.game_systems?.short_name
+                        ?? r.game_system_id}
+                    </td>
                     <td className="px-3 py-2">
                       <span className="inline-flex items-center gap-2">
                         {r.factions?.emblem_url && r.factions.color ? (

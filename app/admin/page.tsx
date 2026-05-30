@@ -11,6 +11,8 @@ import type {
   Profile,
   GameSystem,
   PlanetGameSystem,
+  PointScheme,
+  VideoGameTitle,
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +45,8 @@ export default async function AdminPage() {
     { data: factions },
     { data: gameSystems },
     { data: planetSystems },
+    { data: pointSchemes },
+    { data: videoGames },
   ] = await Promise.all([
     supabase
       .from("submissions")
@@ -53,6 +57,8 @@ export default async function AdminPage() {
     supabase.from("factions").select("*").order("name"),
     supabase.from("game_systems").select("*").order("sort_order"),
     supabase.from("planet_game_systems").select("planet_id, game_system_id"),
+    supabase.from("point_schemes").select("*"),
+    supabase.from("video_game_titles").select("*").order("sort_order"),
   ]);
 
   return (
@@ -78,6 +84,10 @@ export default async function AdminPage() {
           submissions={(pending ?? []) as PendingSubmission[]}
           planets={(planets ?? []) as Planet[]}
           factions={(factions ?? []) as Faction[]}
+          gameSystems={(gameSystems ?? []) as GameSystem[]}
+          pointSchemes={(pointSchemes ?? []) as PointScheme[]}
+          videoGameTitles={(videoGames ?? []) as VideoGameTitle[]}
+          planetSystems={(planetSystems ?? []) as PlanetGameSystem[]}
         />
       </section>
 
