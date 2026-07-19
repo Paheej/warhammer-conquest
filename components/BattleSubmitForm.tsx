@@ -369,20 +369,22 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
         {multiplayer && <> · every listed player earns full glory for their own result</>}
       </div>
 
-      {/* Multiplayer toggle */}
-      <label className="flex items-center gap-2 rounded border border-brass/20 bg-ink/40 px-3 py-2 text-sm text-parchment">
-        <input
-          type="checkbox"
-          checked={multiplayer}
-          onChange={(e) => setMultiplayer(e.target.checked)}
-          className="h-4 w-4 accent-brass"
-        />
-        <span>
-          Multiplayer battle
-          <span className="ml-2 text-xs text-parchment-dark">
-            2v2, 3v2… — multiple players per side. The result above is <em>your side&apos;s</em> result.
-          </span>
-        </span>
+      {/* Battle type: one-on-one vs multiplayer */}
+      <label className="block">
+        <span className="label">Battle Type</span>
+        <select
+          className="input w-full bg-ink text-parchment"
+          value={multiplayer ? 'multiplayer' : 'single'}
+          onChange={(e) => setMultiplayer(e.target.value === 'multiplayer')}
+        >
+          <option value="single" className="bg-ink text-parchment">One-on-one — single opponent</option>
+          <option value="multiplayer" className="bg-ink text-parchment">Multiplayer — multiple players per side (2v2, 3v2…)</option>
+        </select>
+        {multiplayer && (
+          <p className="mt-1 text-xs italic text-parchment-dark">
+            The result above is your side&apos;s result — allies share it, opponents get the opposite.
+          </p>
+        )}
       </label>
 
       {/* Adversary (1v1) or team rosters (multiplayer) */}
