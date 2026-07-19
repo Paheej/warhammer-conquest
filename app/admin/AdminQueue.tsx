@@ -16,6 +16,7 @@ import type {
   PointScheme,
   VideoGameTitle,
   PlanetGameSystem,
+  BattleParticipantView,
 } from "@/lib/types";
 
 type Row = Submission & { profiles: { display_name: string } | null };
@@ -70,6 +71,7 @@ export function AdminQueue({
   pointSchemes,
   videoGameTitles,
   planetSystems,
+  participants = [],
 }: {
   submissions: Row[];
   planets: Planet[];
@@ -78,6 +80,7 @@ export function AdminQueue({
   pointSchemes: PointScheme[];
   videoGameTitles: VideoGameTitle[];
   planetSystems: PlanetGameSystem[];
+  participants?: BattleParticipantView[];
 }) {
   const router = useRouter();
   const [workingId, setWorkingId] = useState<string | null>(null);
@@ -253,6 +256,9 @@ export function AdminQueue({
         const allowedSystems = allowedSystemsFor(game.target_planet_id);
         const suggestedPoints = pointsFor(game.game_system_id, game.game_size, s.result);
         const battleEditable = selectedType === "game";
+        const roster = s.is_multiplayer
+          ? participants.filter((p) => p.submission_id === s.id)
+          : [];
 
         return (
           <div key={s.id} className="card p-6">
@@ -559,11 +565,53 @@ export function AdminQueue({
                     </div>
                   )}
 
-                  <AdversaryPicker
-                    value={game.adversary}
-                    onChange={(v) => setGameState(s.id, { adversary: v }, s)}
-                    currentUserId={s.player_id}
-                  />
+                  {s.is_multiplayer ? (
+                    <div className="rounded border border-brass/20 bg-ink px-3 py-2 text-sm">
+                      <div className="font-display text-xs uppercase tracking-widest text-brass-bright">
+                        Multiplayer Roster
+                      </div>
+                      {roster.length === 0 ? (
+                        <p className="mt-1 text-xs text-crusade">
+                          Marked multiplayer but no players are listed — approving will
+                          treat it like an unlinked solo report. Ask the submitter to
+                          re-add the roster first.
+                        </p>
+                      ) : (
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                          {(["ally", "opponent"] as const).map((side) => (
+                            <div key={side}>
+                              <div className="text-xs uppercase tracking-wider text-parchment-dark">
+                                {side === "ally" ? "Submitter's side" : "Opposing side"}
+                              </div>
+                              <ul className="mt-1 space-y-0.5 text-parchment-dim">
+                                {roster.filter((p) => p.side === side).map((p) => (
+                                  <li key={p.id}>
+                                    {p.display_name ?? "Unknown"}
+                                    {p.faction_name && (
+                                      <span className="text-parchment-dark"> · {p.faction_name}</span>
+                                    )}
+                                  </li>
+                                ))}
+                                {roster.filter((p) => p.side === side).length === 0 && (
+                                  <li className="italic text-parchment-dark">(none listed)</li>
+                                )}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="mt-2 text-xs italic text-parchment-dark">
+                        Every listed player earns their own result&apos;s glory, ELO vs the
+                        opposing team&apos;s average, and a mirrored deed on approval.
+                      </p>
+                    </div>
+                  ) : (
+                    <AdversaryPicker
+                      value={game.adversary}
+                      onChange={(v) => setGameState(s.id, { adversary: v }, s)}
+                      currentUserId={s.player_id}
+                    />
+                  )}
                 </div>
               )}
 

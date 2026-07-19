@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { uploadImage } from '@/lib/upload-image';
 import AdversaryPicker, { type AdversaryValue } from './AdversaryPicker';
+import MultiplayerPicker, { type ParticipantDraft } from './MultiplayerPicker';
 import type {
   GameSystem, GameSystemId, GameSize, BattleResult,
   PointScheme, VideoGameTitle,
@@ -53,6 +54,8 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
   const [adversary, setAdversary] = useState<AdversaryValue>({
     name: '', userId: null, factionId: null, factionName: null,
   });
+  const [multiplayer, setMultiplayer] = useState(false);
+  const [participants, setParticipants] = useState<ParticipantDraft[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,13 +132,25 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       setError('Pick which video game this was played in.');
       return;
     }
-    if (adversary.userId && !adversary.factionId) {
-      setError('Pick which faction the linked opponent fielded.');
-      return;
-    }
-    if (!adversary.name.trim()) {
-      setError('Enter an adversary (name or link).');
-      return;
+    const opponents = participants.filter((p) => p.side === 'opponent');
+    if (multiplayer) {
+      if (opponents.length === 0) {
+        setError('Add at least one player on the opposing side.');
+        return;
+      }
+      if (participants.some((p) => !p.factionId)) {
+        setError('Pick a faction for every listed player.');
+        return;
+      }
+    } else {
+      if (adversary.userId && !adversary.factionId) {
+        setError('Pick which faction the linked opponent fielded.');
+        return;
+      }
+      if (!adversary.name.trim()) {
+        setError('Enter an adversary (name or link).');
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -151,12 +166,18 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       }
     }
 
+    // Multiplayer battles carry their opponents in battle_participants; the
+    // single-adversary columns stay null and opponent_name holds a summary.
+    const opponentSummary = multiplayer
+      ? opponents.map((p) => p.displayName).join(', ')
+      : adversary.name.trim();
+
     const payload: Record<string, unknown> = {
       player_id:    currentUserId,
       // UI kind is 'battle'; DB submission_type enum uses 'game'.
       type:       'game',
       status:     'pending',
-      title:      title.trim() || `${result.toUpperCase()} vs ${adversary.name.trim()}`,
+      title:      title.trim() || `${result.toUpperCase()} vs ${opponentSummary}`,
       body:       description.trim() || null,
       image_url:  finalImageUrl,
       target_planet_id: planetId,
@@ -165,26 +186,41 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       game_system_id:      systemId,
       game_size:           size,
       result,
-      opponent_name:       adversary.name.trim() || null,
+      opponent_name:       opponentSummary || null,
       video_game_title_id: videoGameId === '' ? null : videoGameId,
-      adversary_user_id:   adversary.userId,
-      adversary_faction_id: adversary.factionId,
+      adversary_user_id:   multiplayer ? null : adversary.userId,
+      adversary_faction_id: multiplayer ? null : adversary.factionId,
+      is_multiplayer:      multiplayer,
     };
 
-    // If no linked adversary, stash the opponent name in the title/description
-    if (!adversary.userId && !title.trim()) {
-      payload.title = `${result.toUpperCase()} vs ${adversary.name.trim()}`;
-    }
+    const { data: inserted, error: err } = await supabase
+      .from('submissions')
+      .insert(payload)
+      .select('id')
+      .single();
 
-    const { error: err } = await supabase.from('submissions').insert(payload);
-
-    setSubmitting(false);
-
-    if (err) {
-      setError(err.message);
+    if (err || !inserted) {
+      setSubmitting(false);
+      setError(err?.message ?? 'Submission failed.');
       return;
     }
 
+    if (multiplayer) {
+      const rows = participants.map((p) => ({
+        submission_id: inserted.id,
+        user_id:       p.userId,
+        faction_id:    p.factionId,
+        side:          p.side,
+      }));
+      const { error: pErr } = await supabase.from('battle_participants').insert(rows);
+      if (pErr) {
+        setSubmitting(false);
+        setError(`Report saved but the roster failed (${pErr.message}). Re-add players from your dashboard or ask an admin before it is approved.`);
+        return;
+      }
+    }
+
+    setSubmitting(false);
     router.push('/dashboard?submitted=1');
     router.refresh();
   }
@@ -325,19 +361,46 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       {/* Computed points preview */}
       <div className="rounded border border-brass/40 bg-ink-2 px-3 py-2 text-sm text-parchment-dim">
         This submission is worth <span className="font-bold text-brass-bright">{points}</span> glory points
-        {adversary.userId && (
+        {!multiplayer && adversary.userId && (
           <> · opponent earns <span className="font-bold text-brass-bright">{Math.max(1, Math.ceil(points / 2))}</span></>
         )}
         {currentSystem && <> · {currentSystem.short_name}</>}
         {currentSystem?.supports_size && <> · {size}</>}
+        {multiplayer && <> · every listed player earns full glory for their own result</>}
       </div>
 
-      {/* Adversary */}
-      <AdversaryPicker
-        value={adversary}
-        onChange={setAdversary}
-        currentUserId={currentUserId}
-      />
+      {/* Battle type: one-on-one vs multiplayer */}
+      <label className="block">
+        <span className="label">Battle Type</span>
+        <select
+          className="input w-full bg-ink text-parchment"
+          value={multiplayer ? 'multiplayer' : 'single'}
+          onChange={(e) => setMultiplayer(e.target.value === 'multiplayer')}
+        >
+          <option value="single" className="bg-ink text-parchment">One-on-one — single opponent</option>
+          <option value="multiplayer" className="bg-ink text-parchment">Multiplayer — multiple players per side (2v2, 3v2…)</option>
+        </select>
+        {multiplayer && (
+          <p className="mt-1 text-xs italic text-parchment-dark">
+            The result above is your side&apos;s result — allies share it, opponents get the opposite.
+          </p>
+        )}
+      </label>
+
+      {/* Adversary (1v1) or team rosters (multiplayer) */}
+      {multiplayer ? (
+        <MultiplayerPicker
+          value={participants}
+          onChange={setParticipants}
+          currentUserId={currentUserId}
+        />
+      ) : (
+        <AdversaryPicker
+          value={adversary}
+          onChange={setAdversary}
+          currentUserId={currentUserId}
+        />
+      )}
 
       {/* Title / description / image */}
       <label className="block">
