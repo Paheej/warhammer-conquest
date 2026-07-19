@@ -45,9 +45,12 @@ function ResultBadge({ result }: { result: string | null }) {
 export default async function ActivityFeed({ limit = 15 }: { limit?: number }) {
   const supabase = await createClient();
 
+  // Mirror rows duplicate the original report (one per linked player); the
+  // home feed shows only originals. Player profiles still show mirrors.
   const { data, error } = await supabase
     .from('activity_feed')
     .select('*')
+    .is('mirror_of', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 

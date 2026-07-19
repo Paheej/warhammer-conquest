@@ -13,7 +13,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import FactionEmblem from '@/components/FactionEmblem';
 import { readableTextColor } from '@/lib/contrast';
-import type { ActivityFeedItem } from '@/lib/types';
+import type { ActivityFeedItem, BattleParticipantView } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +52,30 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
 
   if (!data) notFound();
   const it = data as ActivityFeedItem;
+
+  // Multiplayer rosters hang off the ORIGINAL submission; mirrors reference
+  // it via mirror_of. The original's submitter anchors the ally side.
+  let participants: BattleParticipantView[] = [];
+  let original: ActivityFeedItem = it;
+  if (it.kind === 'battle') {
+    const originalId = it.mirror_of ?? it.submission_id;
+    const { data: parts } = await supabase
+      .from('battle_participants_view')
+      .select('*')
+      .eq('submission_id', originalId);
+    participants = (parts ?? []) as BattleParticipantView[];
+
+    if (participants.length > 0 && it.mirror_of) {
+      const { data: orig } = await supabase
+        .from('activity_feed')
+        .select('*')
+        .eq('submission_id', it.mirror_of)
+        .maybeSingle();
+      if (orig) original = orig as ActivityFeedItem;
+    }
+  }
+  const allies    = participants.filter((p) => p.side === 'ally');
+  const opponents = participants.filter((p) => p.side === 'opponent');
 
   const kindMeta = KIND_LABELS[it.kind] ?? { label: it.kind, icon: '✠' };
 
@@ -164,6 +188,36 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
           </div>
         )}
 
+        {/* Multiplayer roster */}
+        {participants.length > 0 && (
+          <section className="mt-8 border-t border-brass/20 pt-6">
+            <h2 className="label">Combatants</h2>
+            <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <RosterColumn
+                title={`${original.faction_name ?? 'Submitter'}'s side`}
+                names={[
+                  { userId: original.user_id, name: original.display_name, faction: original.faction_name },
+                  ...allies.map((p) => ({
+                    userId: p.user_id,
+                    name: p.display_name ?? 'Unknown Commander',
+                    faction: p.faction_name,
+                  })),
+                ]}
+                tone="ally"
+              />
+              <RosterColumn
+                title="Opposing side"
+                names={opponents.map((p) => ({
+                  userId: p.user_id,
+                  name: p.display_name ?? 'Unknown Commander',
+                  faction: p.faction_name,
+                }))}
+                tone="opponent"
+              />
+            </div>
+          </section>
+        )}
+
         {/* Metadata panel */}
         <dl className="mt-8 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-brass/20 pt-6 text-sm sm:grid-cols-2">
           {it.planet_name && (
@@ -226,5 +280,33 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
         </dl>
       </article>
     </main>
+  );
+}
+
+function RosterColumn({
+  title, names, tone,
+}: {
+  title: string;
+  names: Array<{ userId: string | null; name: string; faction: string | null }>;
+  tone: 'ally' | 'opponent';
+}) {
+  return (
+    <div className={`rounded border p-3 ${tone === 'ally' ? 'border-green-700/40 bg-green-900/10' : 'border-red-700/40 bg-red-900/10'}`}>
+      <div className="text-xs font-display uppercase tracking-widest text-parchment-dim">{title}</div>
+      <ul className="mt-2 flex flex-col gap-1 text-sm">
+        {names.map((n, i) => (
+          <li key={n.userId ?? i}>
+            {n.userId ? (
+              <Link href={`/player/${n.userId}`} className="text-parchment hover:text-brass-bright transition-colors">
+                {n.name}
+              </Link>
+            ) : (
+              <span className="text-parchment">{n.name}</span>
+            )}
+            {n.faction && <span className="text-parchment-dark"> · {n.faction}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

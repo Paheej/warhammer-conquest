@@ -59,6 +59,8 @@ export type Submission = {
   video_game_title_id: number | null;
   adversary_user_id: string | null;
   adversary_faction_id: string | null;
+  is_multiplayer: boolean;
+  mirror_of: string | null;
 };
 
 export type FactionTotal = {
@@ -223,6 +225,8 @@ export interface ActivityFeedItem {
   lore_title: string | null;
   lore_format: LoreFormat | null;
   lore_rating: number | null;
+  mirror_of: string | null;
+  is_multiplayer: boolean;
   user_id: string | null;
   display_name: string;
   avatar_url: string | null;
@@ -248,6 +252,33 @@ export interface SearchablePlayer {
   avatar_url: string | null;
   primary_faction_id: string | null;
   primary_faction_name: string | null;
+}
+
+export type BattleSide = 'ally' | 'opponent';
+
+export interface BattleParticipant {
+  id: string;
+  submission_id: string;
+  user_id: string;
+  faction_id: string;
+  side: BattleSide;
+  elo_delta: number;
+  created_at: string;
+}
+
+/** Row from battle_participants_view (participant joined with profile + faction). */
+export interface BattleParticipantView {
+  id: string;
+  submission_id: string;
+  user_id: string;
+  side: BattleSide;
+  elo_delta: number;
+  display_name: string | null;
+  avatar_url: string | null;
+  faction_id: string | null;
+  faction_name: string | null;
+  faction_color: string | null;
+  faction_emblem_url: string | null;
 }
 
 export type AwardTier = 'common' | 'honoured' | 'legendary' | 'adamantium';

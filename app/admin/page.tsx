@@ -13,6 +13,7 @@ import type {
   PlanetGameSystem,
   PointScheme,
   VideoGameTitle,
+  BattleParticipantView,
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +62,15 @@ export default async function AdminPage() {
     supabase.from("video_game_titles").select("*").order("sort_order"),
   ]);
 
+  // Multiplayer rosters for the pending reports (read-only in the queue).
+  const pendingIds = (pending ?? []).map((s) => s.id as string);
+  const { data: participants } = pendingIds.length
+    ? await supabase
+        .from("battle_participants_view")
+        .select("*")
+        .in("submission_id", pendingIds)
+    : { data: [] };
+
   return (
     <div className="space-y-12 fade-up">
       <div className="text-center">
@@ -88,6 +98,7 @@ export default async function AdminPage() {
           pointSchemes={(pointSchemes ?? []) as PointScheme[]}
           videoGameTitles={(videoGames ?? []) as VideoGameTitle[]}
           planetSystems={(planetSystems ?? []) as PlanetGameSystem[]}
+          participants={(participants ?? []) as BattleParticipantView[]}
         />
       </section>
 
