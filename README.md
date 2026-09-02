@@ -46,6 +46,10 @@ A Warhammer 40,000 narrative-campaign tracker for gaming groups. Players log bat
 - **Home-page feed** of recent approved deeds with thumbnails, kind badges, faction colours, and links into player profiles, planets, and adversaries.
 - **Per-deed detail page** at `/submission/<id>` showing the full image and metadata.
 
+### Admin notifications
+- Admins get emailed when a submission lands in the queue — capped to at most one email per day no matter how many submissions arrive.
+- A weekly digest emails admins every Sunday at noon (UTC) if anything is still outstanding.
+
 ### Admin panel (`/admin`)
 - Approval queue with point adjustment.
 - Inline editing of planets (name, image, description, position, game-system allowlist, controlling faction).
@@ -78,6 +82,7 @@ The schema is split into SQL files because PostgreSQL forbids referencing a newl
 4. Open a fresh **New query**, paste the contents of `supabase/migrations/0003_fix_award_evaluation_timing.sql`, and **Run**. This fixes an off-by-one in award evaluation so threshold-based badges (First Blood, Brush Initiate, etc.) fire on the first qualifying approval rather than the second.
 5. Open a fresh **New query**, paste the contents of `supabase/migrations/0004_vlw_on_profile_insert.sql`, and **Run**. This grants Veteran of the Long War at account-creation time (instead of waiting for a first approval) and backfills the badge for the first 10 existing profiles.
 6. Open a fresh **New query**, paste the contents of `supabase/migrations/0015_video_game_per_title_elo.sql`, and **Run**. This splits video-game ELO ratings out by individual title (Dawn of War, Battlesector, etc.) instead of pooling every video game into one rating; the migration wipes existing `video` ELO rows and replays approved video matches in time order to rebuild per-title ratings.
+7. Open a fresh **New query**, paste the contents of `supabase/migrations/0018_notification_log.sql`, and **Run**. This adds the table admin-notification emails use to cap themselves to one send per day.
 
 All files are idempotent (they use `if not exists` / `on conflict do update` / `create or replace`), so you can safely re-run them.
 
@@ -88,7 +93,14 @@ All files are idempotent (they use `if not exists` / `on conflict do update` / `
 3. Go to **Settings → Upload → Upload presets → Add upload preset**.
 4. Name it (e.g. `campaign-chronicle`), set **Signing Mode** to **Unsigned**, and save. Copy the preset name.
 
-### 4. Enable Discord OAuth (optional but recommended)
+### 4. Set up Resend (admin email notifications)
+
+1. Sign up free at [resend.com](https://resend.com).
+2. Go to **Domains → Add Domain**, enter your domain, and add the DNS records it gives you (with your registrar/DNS host). Wait for it to verify.
+3. Go to **API Keys → Create API Key** and copy it — you'll only see it once.
+4. Decide on a sender address on your verified domain (e.g. `notifications@yourdomain.com`).
+
+### 5. Enable Discord OAuth (optional but recommended)
 
 1. Go to [discord.com/developers/applications](https://discord.com/developers/applications) → **New Application**.
 2. Name it (e.g. "Campaign Chronicle"). Open **OAuth2** in the sidebar.
@@ -96,13 +108,14 @@ All files are idempotent (they use `if not exists` / `on conflict do update` / `
 4. In Supabase, go to **Authentication → Providers → Discord**, toggle it on, paste both values, and copy the **Callback URL** shown at the top.
 5. Back in Discord, paste that Callback URL into **OAuth2 → Redirects** and save.
 
-### 5. Get your Supabase credentials
+### 6. Get your Supabase credentials
 
 In your Supabase project, go to **Settings → API** and copy:
 - **Project URL** (looks like `https://xxxxx.supabase.co`)
 - **anon public** key (long string starting with `eyJ...`)
+- **service_role** key (also long, starts with `eyJ...`) — keep this one secret, it bypasses RLS
 
-### 6. Push to GitHub
+### 7. Push to GitHub
 
 ```bash
 git clone https://github.com/Paheej/warhammer-conquest.git campaign-chronicle
@@ -112,23 +125,31 @@ git remote set-url origin https://github.com/YOUR_USERNAME/campaign-chronicle.gi
 git push -u origin main
 ```
 
-### 7. Deploy on Vercel
+### 8. Deploy on Vercel
 
 1. Go to [vercel.com](https://vercel.com), sign in with GitHub.
 2. **Add New → Project** → select your `campaign-chronicle` repo.
-3. Before deploying, expand **Environment Variables** and add all five:
+3. Generate two random secrets for the next steps (e.g. run `openssl rand -hex 32` twice) — one for `SUPABASE_WEBHOOK_SECRET`, one for `CRON_SECRET`.
+4. Before deploying, expand **Environment Variables** and add:
 
    | Name | Value |
    |---|---|
-   | `NEXT_PUBLIC_SUPABASE_URL` | Your Project URL from step 5 |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon public key from step 5 |
+   | `NEXT_PUBLIC_SUPABASE_URL` | Your Project URL from step 6 |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon public key from step 6 |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Your service_role key from step 6 |
    | `NEXT_PUBLIC_ADMIN_EMAILS` | Comma-separated admin emails, no spaces (e.g. `you@example.com,friend@example.com`) |
    | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Your Cloudinary cloud name from step 3 |
    | `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Your unsigned upload preset name from step 3 |
+   | `RESEND_API_KEY` | Your Resend API key from step 4 |
+   | `RESEND_FROM_EMAIL` | Your sender address from step 4 (e.g. `notifications@yourdomain.com`) |
+   | `SUPABASE_WEBHOOK_SECRET` | The first random secret you generated above |
+   | `CRON_SECRET` | The second random secret you generated above |
+   | `NEXT_PUBLIC_SITE_URL` | Leave blank for now — you'll add it after deploying and getting your URL |
 
-4. Click **Deploy**. Wait ~90 seconds. You'll get a URL like `campaign-chronicle-xxx.vercel.app`.
+5. Click **Deploy**. Wait ~90 seconds. You'll get a URL like `campaign-chronicle-xxx.vercel.app`.
+6. Go back to **Settings → Environment Variables**, set `NEXT_PUBLIC_SITE_URL` to that URL, and redeploy (**Deployments** tab → **⋯** on the latest → **Redeploy**).
 
-### 8. Configure auth redirects
+### 9. Configure auth redirects
 
 Back in Supabase → **Authentication → URL Configuration**:
 - **Site URL:** your Vercel URL (e.g. `https://campaign-chronicle-xxx.vercel.app`).
@@ -136,7 +157,15 @@ Back in Supabase → **Authentication → URL Configuration**:
 
 If you later add a custom domain, repeat this step with the new URL.
 
-### 9. Become admin
+### 10. Wire up the new-submission notification webhook
+
+1. In Supabase, go to **Database → Webhooks → Create a new hook**.
+2. Name it (e.g. `notify-admins-on-submission`), set **Table** to `submissions`, and check only the **Insert** event.
+3. Set **Type** to `HTTP Request`, **Method** to `POST`, and **URL** to `https://<your-vercel-url>/api/webhooks/new-submission`.
+4. Under **HTTP Headers**, add `x-webhook-secret` with the same value you set for `SUPABASE_WEBHOOK_SECRET` in Vercel.
+5. Save. The weekly digest needs no equivalent setup — it runs on its own via the Vercel Cron Job defined in `vercel.json`.
+
+### 11. Become admin
 
 - Sign up through the app using an email on your `NEXT_PUBLIC_ADMIN_EMAILS` list.
 - The first sign-in auto-promotes you via `/auth/callback`. You'll see an **Admin** link in the nav.
@@ -149,8 +178,15 @@ If you later add a custom domain, repeat this step with the new URL.
 ```bash
 npm install
 cp .env.example .env.local
-# Fill in .env.local with the same five values from step 7
+# Fill in .env.local with the same values from step 8
 npm run dev
+```
+
+Admin notification emails only fire from a deployed Supabase Database Webhook and Vercel Cron Job — they won't trigger from `npm run dev`. You can still exercise the routes locally with `curl`:
+
+```bash
+curl -X POST http://localhost:3000/api/webhooks/new-submission -H "x-webhook-secret: your-secret"
+curl http://localhost:3000/api/cron/weekly-digest -H "authorization: Bearer your-secret"
 ```
 
 Open [http://localhost:3000](http://localhost:3000). For local Discord OAuth, add `http://localhost:3000/auth/callback` to Supabase's Redirect URLs list.
@@ -184,7 +220,7 @@ Row Level Security ensures:
 
 ## Cost
 
-Vercel Hobby + Supabase Free + Cloudinary Free will cover a typical gaming group indefinitely. The image-hosting load lives on Cloudinary (25 GB / 25 GB monthly bandwidth free), so Supabase storage stays empty.
+Vercel Hobby + Supabase Free + Cloudinary Free + Resend Free will cover a typical gaming group indefinitely. The image-hosting load lives on Cloudinary (25 GB / 25 GB monthly bandwidth free), so Supabase storage stays empty. Resend's free tier (3,000 emails/month, 100/day) comfortably covers one email a day plus a weekly digest.
 
 ---
 
@@ -201,13 +237,17 @@ app/
   leaderboard/                            # Faction + commander rankings
   player/[id]/                            # Public player profile
   submission/[id]/                        # Per-deed detail page
+  api/webhooks/new-submission/            # Supabase DB webhook target — emails admins (rate-limited)
+  api/cron/weekly-digest/                 # Vercel Cron target — Sunday-noon outstanding-queue digest
 components/
   NavBar, ActivityFeed, AdversaryPicker, BattleSubmitForm,
   FactionMembership, AdminPlanetEditor, HonoursBadgeRow, KindBadge, ...
 lib/
   types.ts                                # Shared TypeScript types
   admin.ts                                # Email-based admin check
+  email.ts                                # Resend wrapper — sends to profiles.is_admin recipients
   supabase/{client,server,middleware}.ts  # Supabase clients per context
+  supabase/admin.ts                       # Service-role client for server-only routes
 supabase/migrations/
   0001_schema.sql                         # Tables, RLS, triggers, seed data, awards catalogue
   0002_features.sql                       # Loremaster reading-track + season admin RPC
