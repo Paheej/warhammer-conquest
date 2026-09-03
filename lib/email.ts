@@ -1,8 +1,6 @@
 import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function getAdminEmails(supabase: SupabaseClient): Promise<string[]> {
   const { data } = await supabase
     .from("profiles")
@@ -21,16 +19,19 @@ export async function sendAdminEmail({
   subject: string;
   html: string;
 }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    console.warn("sendAdminEmail: RESEND_API_KEY/RESEND_FROM_EMAIL not configured, skipping send");
+    return;
+  }
+
   const to = await getAdminEmails(supabase);
   if (to.length === 0) {
     console.warn("sendAdminEmail: no admin emails found, skipping send");
     return;
   }
 
-  await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
-    to,
-    subject,
-    html,
-  });
+  const resend = new Resend(apiKey);
+  await resend.emails.send({ from, to, subject, html });
 }
