@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { uploadImage } from '@/lib/upload-image';
+import { pingAdminsOfSubmission } from '@/lib/notify-admins';
 import AdversaryPicker, { type AdversaryValue } from './AdversaryPicker';
 import MultiplayerPicker, { type ParticipantDraft } from './MultiplayerPicker';
 import type {
@@ -204,6 +205,9 @@ export default function BattleSubmitForm({ planets, userFactions, planetSystems,
       setError(err?.message ?? 'Submission failed.');
       return;
     }
+
+    // The report is saved (pending) even if the roster insert below fails.
+    pingAdminsOfSubmission();
 
     if (multiplayer) {
       const rows = participants.map((p) => ({
