@@ -79,6 +79,7 @@ The schema is split into SQL files because PostgreSQL forbids referencing a newl
 5. Open a fresh **New query**, paste the contents of `supabase/migrations/0004_vlw_on_profile_insert.sql`, and **Run**. This grants Veteran of the Long War at account-creation time (instead of waiting for a first approval) and backfills the badge for the first 10 existing profiles.
 6. Open a fresh **New query**, paste the contents of `supabase/migrations/0015_video_game_per_title_elo.sql`, and **Run**. This splits video-game ELO ratings out by individual title (Dawn of War, Battlesector, etc.) instead of pooling every video game into one rating; the migration wipes existing `video` ELO rows and replays approved video matches in time order to rebuild per-title ratings.
 7. Open a fresh **New query**, paste the contents of `supabase/migrations/0018_fix_faction_totals_fanout.sql`, and **Run**. This fixes `faction_totals` multiplying a faction's points, wins and deed counts by the number of planets it controls.
+8. Open a fresh **New query**, paste the contents of `supabase/migrations/0019_admin_notifications.sql`, and **Run**. This adds the throttle state for admin email notifications (see *Admin email notifications* below).
 
 All files are idempotent (they use `if not exists` / `on conflict do update` / `create or replace`), so you can safely re-run them.
 
@@ -142,6 +143,15 @@ If you later add a custom domain, repeat this step with the new URL.
 - Sign up through the app using an email on your `NEXT_PUBLIC_ADMIN_EMAILS` list.
 - The first sign-in auto-promotes you via `/auth/callback`. You'll see an **Admin** link in the nav.
 - If it doesn't appear, sign out and back in, or flip `is_admin = true` for your row in `profiles` via the Supabase **Table Editor**.
+
+### 10. Admin email notifications (optional)
+
+Admins (`profiles.is_admin`, plus anyone in `NEXT_PUBLIC_ADMIN_EMAILS`) get emailed when deeds are waiting for approval:
+
+- **On submission:** at most one email per 24 hours, listing everything pending.
+- **Sunday reminder:** a Vercel cron (`vercel.json`, 17:00 UTC, which is noon US Eastern in winter and 1pm in summer) emails if anything is still pending.
+
+Setup: run migration `0019`, verify your domain in [Resend](https://resend.com), then add `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `EMAIL_FROM` and `CRON_SECRET` to Vercel (see `.env.example`) and redeploy. Without these the app works normally and simply doesn't send email.
 
 ---
 

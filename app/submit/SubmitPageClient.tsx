@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { uploadImage } from '@/lib/upload-image';
+import { pingAdminsOfSubmission } from '@/lib/notify-admins';
 import BattleSubmitForm from '@/components/BattleSubmitForm';
 import { POINT_PRESETS } from '@/lib/types';
 import type { GameSystemId, LoreFormat } from '@/lib/types';
@@ -177,6 +178,7 @@ function SimpleSubmitForm({
     });
     setSubmitting(false);
     if (err) { setError(err.message); return; }
+    pingAdminsOfSubmission();
     router.push('/dashboard?submitted=1');
     router.refresh();
   }
@@ -423,6 +425,7 @@ function LoremasterSubmitForm({
     });
     setSubmitting(false);
     if (err) { setError(err.message); return; }
+    pingAdminsOfSubmission();
     router.push('/dashboard?submitted=1');
     router.refresh();
   }
