@@ -4,6 +4,7 @@ import { AdminQueue } from "./AdminQueue";
 import { AdminPlanets } from "./AdminPlanets";
 import { AdminFactions } from "./AdminFactions";
 import { AdminSeason } from "./AdminSeason";
+import { AdminLedger } from "./AdminLedger";
 import type {
   Submission,
   Faction,
@@ -119,6 +120,13 @@ export default async function AdminPage() {
           FACTIONS
         </h2>
         <AdminFactions factions={(factions ?? []) as Faction[]} />
+      </section>
+
+      <section>
+        <h2 className="font-display text-2xl tracking-widest text-parchment mb-4">
+          LEDGER CORRECTIONS
+        </h2>
+        <AdminLedger factions={(factions ?? []) as Faction[]} />
       </section>
 
       <section>
